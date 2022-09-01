@@ -20,10 +20,6 @@ int index_num = 0;
 long runtime = 0;
 String all_json = "";
 
-WiFiUDP udp;
-unsigned int localPort = 2983;
-char packetBuffer[256]; //buffer to hold incoming packet
-
 void setup()
 {
     Serial.begin(115200);
@@ -42,9 +38,6 @@ void setup()
     Serial.println("Connected");
     Serial.print("IP Address:");
     Serial.println(WiFi.localIP());
-
-    Serial.println("About to create UDP port to listen to");
-    udp.begin(localPort);
 
     if (client.connect(host, 80))
     {
@@ -73,31 +66,10 @@ void setup()
 
 void loop()
 {
-
-
-  int packetSize = udp.parsePacket();
-  if (packetSize) {
-    Serial.print("Received packet of size ");
-    Serial.println(packetSize);
-    Serial.print("From ");
-    IPAddress remoteIp = udp.remoteIP();
-    Serial.print(remoteIp);
-    Serial.print(", port ");
-    Serial.println(udp.remotePort());
-    // read the packet into packetBufffer
-    int len = udp.read(packetBuffer, 255);
-    if (len > 0) {
-      packetBuffer[len] = 0;
-    }
-    Serial.println("Contents:");
-    Serial.println(packetBuffer);
-    udp.endPacket();
-  }
-
-
     DW1000Ranging.loop();
     if ((millis() - runtime) > 1000)
     {
+        getCoordinates(uwb_data);
         make_link_json(uwb_data, &all_json);
         send_udp(&all_json);
         runtime = millis();

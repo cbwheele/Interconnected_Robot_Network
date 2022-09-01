@@ -17,6 +17,55 @@ struct MyLink *init_link()
     return p;
 }
 
+Coordinates getCoordinates(struct MyLink *p) {
+
+    Serial.println("This is inside of getCoordinates function");
+    struct MyLink *temp = p;
+
+    float firstReading = -1;
+    float secondReading = -1;
+
+    while (temp->next != NULL)
+    {
+        temp = temp->next;
+        char link_json[50];
+        Serial.println(temp->anchor_addr);
+        Serial.println(temp->range[0]);
+
+        if (firstReading == -1) {
+          firstReading = temp->range[0];
+        } else {
+          secondReading = temp->range[0];
+        }
+        //*s += link_json;
+        if (temp->next != NULL)
+        {
+            //*s += ",";
+        }
+    }
+
+
+    Coordinates returnCoordinates = Coordinates(0.0, 0.0);
+
+    
+    if (firstReading != -1 && secondReading != -1) {
+    // Here I have both firstReading and secondReading as the distance to each of the two anchors:
+
+      Serial.println("Two distances:");
+      Serial.println(firstReading);
+      Serial.println(secondReading);
+
+
+      // Do math to create coordinates from that:
+
+      // Set the coordinates inside of the returnCoordinates objects
+
+    }
+
+
+    return returnCoordinates;
+}
+
 void add_link(struct MyLink *p, uint16_t addr)
 {
 #ifdef SERIAL_DEBUG
