@@ -12,7 +12,7 @@
 
 const char *ssid = "ncsu";
 const char *password = "";
-const char *host = "172.20.10.2";
+const char *host = "10.154.57.160";
 WiFiClient client;
 
 struct MyLink *uwb_data;

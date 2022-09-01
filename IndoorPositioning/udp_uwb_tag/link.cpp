@@ -2,6 +2,8 @@
 
 //#define SERIAL_DEBUG
 
+#include <cmath>
+
 struct MyLink *init_link()
 {
 #ifdef SERIAL_DEBUG
@@ -51,15 +53,32 @@ Coordinates getCoordinates(struct MyLink *p) {
     if (firstReading != -1 && secondReading != -1) {
     // Here I have both firstReading and secondReading as the distance to each of the two anchors:
 
-      Serial.println("Two distances:");
-      Serial.println(firstReading);
+      Serial.print("Two distances: ");
+      Serial.print(firstReading);
+      Serial.print(", ");
       Serial.println(secondReading);
 
 
       // Do math to create coordinates from that:
+      // a is first measurement
+      // b is second measurement
+      // c is distance between anchors
+      float a = firstReading;
+      float b = secondReading;
+      float c = 3.0;
+      
+      float cos_a = (b * b + c*c - a * a) / (2 * b * c);
+      float x = b * cos_a;
+      float y = b * sqrt(1 - cos_a * cos_a);
 
       // Set the coordinates inside of the returnCoordinates objects
+      returnCoordinates.x = x;
+      returnCoordinates.y = y;
 
+      Serial.print("Calculated coordinates: ");
+      Serial.print(x);
+      Serial.print(", ");
+      Serial.println(y);
     }
 
 
