@@ -79,6 +79,9 @@ Coordinates getCoordinates(struct MyLink *p) {
       Serial.print(x);
       Serial.print(", ");
       Serial.println(y);
+
+      // Send the data over UART to the MSP432
+      
     }
 
 

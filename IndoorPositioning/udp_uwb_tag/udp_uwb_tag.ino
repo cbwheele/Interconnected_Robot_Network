@@ -2,6 +2,9 @@
 #include <DW1000Ranging.h>
 #include <WiFi.h>
 #include "link.h"
+#include <HardwareSerial.h>
+
+
 
 #define SPI_SCK 18
 #define SPI_MISO 19
@@ -9,6 +12,9 @@
 #define DW_CS 4
 #define PIN_RST 27
 #define PIN_IRQ 34
+
+#define RED_LED 33
+#define GRN_LED 32
 
 const char *ssid = "ncsu";
 const char *password = "";
@@ -20,9 +26,17 @@ int index_num = 0;
 long runtime = 0;
 String all_json = "";
 
+HardwareSerial SerialPort(2); // use UART2
+
 void setup()
 {
+    pinMode(RED_LED, OUTPUT);
+    digitalWrite(RED_LED, LOW);
+    pinMode(GRN_LED, OUTPUT);
+    digitalWrite(GRN_LED, LOW);
+  
     Serial.begin(115200);
+    SerialPort.begin(115200, SERIAL_8N1, 16, 17);
 
     Serial.println("WiFi Mac Address:");
     Serial.println(WiFi.macAddress());
@@ -34,8 +48,12 @@ void setup()
     {
         delay(500);
         Serial.print(".");
+        digitalWrite(RED_LED, !digitalRead(RED_LED));
     }
+    digitalWrite(RED_LED, LOW);
+    digitalWrite(GRN_LED, HIGH);
     Serial.println("Connected");
+    
     Serial.print("IP Address:");
     Serial.println(WiFi.localIP());
 
@@ -61,6 +79,8 @@ void setup()
     DW1000Ranging.startAsTag("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_LONGDATA_RANGE_LOWPOWER);
 
     uwb_data = init_link();
+
+    
     
 }
 
@@ -69,10 +89,21 @@ void loop()
     DW1000Ranging.loop();
     if ((millis() - runtime) > 1000)
     {
-        getCoordinates(uwb_data);
+        Coordinates currentCoordinates = getCoordinates(uwb_data);
         make_link_json(uwb_data, &all_json);
         send_udp(&all_json);
         runtime = millis();
+
+        Serial.print("From Current Coordinates: ");
+        Serial.print(currentCoordinates.x);
+        Serial.print(", ");
+        Serial.println(currentCoordinates.y);
+
+
+        SerialPort.print(currentCoordinates.x,4);
+        SerialPort.print(":");
+        SerialPort.print(currentCoordinates.y,4);
+        SerialPort.println();
     }
 }
 
