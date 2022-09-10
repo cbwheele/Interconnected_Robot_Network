@@ -2,3 +2,5 @@
 The Interconnected Robot Network (abbreviated IRN) is a Senior Design project for four students in Electrical and Computer Engineering at NC State University.
 
 We worked on this project from Spring 2022 - Fall 2022.
+
+Team Members: Brandon O, Caleb Wheeler, Tanner Boylan, Clay Scarboro
