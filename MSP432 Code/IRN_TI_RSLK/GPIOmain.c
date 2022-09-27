@@ -49,6 +49,9 @@ policies, either expressed or implied, of the FreeBSD Project.
 #include "Clock.h"
 #include "ports.h"
 #include "./inc/TExaS.h"
+#include "./inc/Motor.h"
+#include "./inc/PWM.h"
+
 
 void GPIO_Init(void){
   // initialize P4.3-P4.0 and make them outputs
@@ -64,15 +67,40 @@ int main(void){
 
   Init_Our_Custom_Ports(); // This will turn on the Red LED
 
+  PWM_Init34(15000, 0, 0);
+  Motor_Init();
+
+
+  // First, we need to wait until coordinates start being sent over UART
+  
+  // Then, we will want to delay for maybe 10 seconds to allow those coordinates to settle
+
+  // Then, read in those coordinates for five seconds and save the average of those as "starting location"
+
+  // Drive forward for two seconds
+
+  // Wait five seconds for coordinates to stabilize
+
+  // Read in the coordinates over five seconds (average) and save that as "secondary location"
+
+  // Calculate based on starting location and secondary location
+
+  // Turn in direction of the starting point
+
+  // Drive for distance until the starting point
+
+
+  Motor_Forward(5000,5000);
+  Clock_Delay1ms(1000);
+
+  Motor_Stop();
+
+  
+
   while(1){
-    P4->OUT = (P4->OUT&~0x0F)|10; // 1010, LED is 0101
-    Clock_Delay1ms(100);          // 100ms delay 10 steps/sec
-    P4->OUT = (P4->OUT&~0x0F)|9;  // 1001, LED is 0110
-    Clock_Delay1ms(100);          // 100ms delay 10 steps/sec
-    P4->OUT = (P4->OUT&~0x0F)|5;  // 0101, LED is 1010
-    Clock_Delay1ms(100);          // 100ms delay 10 steps/sec
-    P4->OUT = (P4->OUT&~0x0F)|6;  // 0110, LED is 1001
-    Clock_Delay1ms(100);          // 100ms delay 10 steps/sec
+
+
+
   }
 }
 
