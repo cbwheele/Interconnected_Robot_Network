@@ -62,7 +62,7 @@ int main(void){
   GPIO_Init();
   TExaS_Init(LOGICANALYZER_P4);
 
-  Init_Our_Custom_Ports();
+  Init_Our_Custom_Ports(); // This will turn on the Red LED
 
   while(1){
     P4->OUT = (P4->OUT&~0x0F)|10; // 1010, LED is 0101
