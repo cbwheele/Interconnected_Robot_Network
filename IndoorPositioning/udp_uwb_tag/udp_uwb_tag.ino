@@ -2,6 +2,9 @@
 #include <DW1000Ranging.h>
 #include <WiFi.h>
 #include "link.h"
+#include <HardwareSerial.h>
+
+
 
 #define SPI_SCK 18
 #define SPI_MISO 19
@@ -10,9 +13,12 @@
 #define PIN_RST 27
 #define PIN_IRQ 34
 
+#define RED_LED 33
+#define GRN_LED 32
+
 const char *ssid = "ncsu";
 const char *password = "";
-const char *host = "172.20.10.2";
+const char *host = "10.154.57.160";
 WiFiClient client;
 
 struct MyLink *uwb_data;
@@ -20,13 +26,17 @@ int index_num = 0;
 long runtime = 0;
 String all_json = "";
 
-WiFiUDP udp;
-unsigned int localPort = 2983;
-char packetBuffer[256]; //buffer to hold incoming packet
+HardwareSerial SerialPort(2); // use UART2
 
 void setup()
 {
+    pinMode(RED_LED, OUTPUT);
+    digitalWrite(RED_LED, LOW);
+    pinMode(GRN_LED, OUTPUT);
+    digitalWrite(GRN_LED, LOW);
+  
     Serial.begin(115200);
+    SerialPort.begin(115200, SERIAL_8N1, 16, 17);
 
     Serial.println("WiFi Mac Address:");
     Serial.println(WiFi.macAddress());
@@ -38,13 +48,14 @@ void setup()
     {
         delay(500);
         Serial.print(".");
+        digitalWrite(RED_LED, !digitalRead(RED_LED));
     }
+    digitalWrite(RED_LED, LOW);
+    digitalWrite(GRN_LED, HIGH);
     Serial.println("Connected");
+    
     Serial.print("IP Address:");
     Serial.println(WiFi.localIP());
-
-    Serial.println("About to create UDP port to listen to");
-    udp.begin(localPort);
 
     if (client.connect(host, 80))
     {
@@ -68,39 +79,31 @@ void setup()
     DW1000Ranging.startAsTag("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_LONGDATA_RANGE_LOWPOWER);
 
     uwb_data = init_link();
+
+    
     
 }
 
 void loop()
 {
-
-
-  int packetSize = udp.parsePacket();
-  if (packetSize) {
-    Serial.print("Received packet of size ");
-    Serial.println(packetSize);
-    Serial.print("From ");
-    IPAddress remoteIp = udp.remoteIP();
-    Serial.print(remoteIp);
-    Serial.print(", port ");
-    Serial.println(udp.remotePort());
-    // read the packet into packetBufffer
-    int len = udp.read(packetBuffer, 255);
-    if (len > 0) {
-      packetBuffer[len] = 0;
-    }
-    Serial.println("Contents:");
-    Serial.println(packetBuffer);
-    udp.endPacket();
-  }
-
-
     DW1000Ranging.loop();
     if ((millis() - runtime) > 1000)
     {
+        Coordinates currentCoordinates = getCoordinates(uwb_data);
         make_link_json(uwb_data, &all_json);
         send_udp(&all_json);
         runtime = millis();
+
+        Serial.print("From Current Coordinates: ");
+        Serial.print(currentCoordinates.x);
+        Serial.print(", ");
+        Serial.println(currentCoordinates.y);
+
+
+        SerialPort.print(currentCoordinates.x,4);
+        SerialPort.print(":");
+        SerialPort.print(currentCoordinates.y,4);
+        SerialPort.println();
     }
 }
 

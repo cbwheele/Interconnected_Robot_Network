@@ -6,7 +6,7 @@ import json
 
 hostname = socket.gethostname()
 UDP_IP = socket.gethostbyname(hostname)
-UDP_IP = "172.20.10.2"
+UDP_IP = "10.154.57.160"
 print("***Local ip:" + str(UDP_IP) + "***")
 UDP_PORT = 80
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
