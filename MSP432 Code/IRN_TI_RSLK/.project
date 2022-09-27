@@ -31,7 +31,7 @@
 			<locationURI>PARENT-1-ORIGINAL_PROJECT_ROOT/inc/Clock.c</locationURI>
 		</link>
 		<link>
-			<name>TExaS.c</name>
+			<name>inc/TExaS.c</name>
 			<type>1</type>
 			<locationURI>PARENT-1-ORIGINAL_PROJECT_ROOT/inc/TExaS.c</locationURI>
 		</link>

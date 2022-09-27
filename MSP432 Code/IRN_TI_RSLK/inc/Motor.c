@@ -48,8 +48,8 @@ policies, either expressed or implied, of the FreeBSD Project.
 
 #include <stdint.h>
 #include "msp.h"
-#include "../inc/CortexM.h"
-#include "../inc/PWM.h"
+#include "CortexM.h"
+#include "PWM.h"
 
 // *******Lab 13 solution*******
 
