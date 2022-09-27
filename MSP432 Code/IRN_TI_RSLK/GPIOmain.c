@@ -47,6 +47,7 @@ policies, either expressed or implied, of the FreeBSD Project.
 #include <stdint.h>
 #include "msp.h"
 #include "Clock.h"
+#include "ports.h"
 #include "TExaS.h"
 
 void GPIO_Init(void){
@@ -60,10 +61,9 @@ int main(void){
   Clock_Init48MHz();
   GPIO_Init();
   TExaS_Init(LOGICANALYZER_P4);
-  P2->SEL0 &= ~0x01;
-  P2->SEL1 &= ~0x01;
-  P2->DIR  |=  0x01;
-  P2->OUT  |=  0x01;
+
+  Init_Our_Custom_Ports();
+
   while(1){
     P4->OUT = (P4->OUT&~0x0F)|10; // 1010, LED is 0101
     Clock_Delay1ms(100);          // 100ms delay 10 steps/sec
