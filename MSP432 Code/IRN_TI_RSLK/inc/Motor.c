@@ -80,18 +80,7 @@ void Motor_Init(void){
   P5->OUT  &= ~0x30;    // Output = 0
 }
 
-// ------------Motor_Stop------------
-// Stop the motors, power down the drivers, and
-// set the PWM speed control to 0% duty cycle.
-// Input: none
-// Output: none
-void Motor_Stop(void){
-  // write this as part of Lab 13
-  Motor_Forward(0,0);
-  P2->OUT  &= ~0xC0;    // PWM off == Enable off
-  P3->OUT  |=  0xC0;    // Output = 1,  Sleep = 1
-  
-}
+
 
 // ------------Motor_Forward------------
 // Drive the robot forward by running left and
@@ -106,6 +95,20 @@ void Motor_Forward(uint16_t leftDuty, uint16_t rightDuty){
   P5->OUT  &= ~0x30;    // Both motor forward
   PWM_Duty3(rightDuty); //P2.6 --> right motor
   PWM_Duty4(leftDuty);  //P2.7 --> left motor
+}
+
+
+// ------------Motor_Stop------------
+// Stop the motors, power down the drivers, and
+// set the PWM speed control to 0% duty cycle.
+// Input: none
+// Output: none
+void Motor_Stop(void){
+  // write this as part of Lab 13
+  Motor_Forward(0,0);
+  P2->OUT  &= ~0xC0;    // PWM off == Enable off
+  P3->OUT  |=  0xC0;    // Output = 1,  Sleep = 1
+
 }
 
 // ------------Motor_Right------------

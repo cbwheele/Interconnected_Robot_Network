@@ -51,6 +51,7 @@ policies, either expressed or implied, of the FreeBSD Project.
 #include "./inc/TExaS.h"
 #include "./inc/Motor.h"
 #include "./inc/PWM.h"
+#include "./inc/TimerA2.h"
 
 
 void GPIO_Init(void){
@@ -60,7 +61,47 @@ void GPIO_Init(void){
   P4->DIR |= 0x0F;              // make stepper motor/LED pins out
 }
 
-int main(void){
+
+void TA1_0_IRQHandler(void){
+TIMER_A1->CCTL[0] &= ~0x0001; // ack
+// body
+P2->OUT ^= 2;
+}
+
+
+void Toggle_LED(void) {
+    P2->OUT ^= 2;
+}
+
+
+int main(void) {
+    /* initialize P2.1 for green LED */
+    P2->SEL1 &= ~2;         /* configure P2.1 as simple I/O */
+    P2->SEL0 &= ~2;
+    P2->DIR |= 2;           /* P2.1 set as output */
+    P2->OUT &= ~2;
+//
+//    TIMER_A1->CTL = 0x01D1;     /* ACLK, ID = /8, up mode, TA clear */
+//    TIMER_A1->CCR[0] = 512 - 1; /* for 1 sec */
+//    TIMER_A1->EX0 = 7;          /* IDEX = /8 */
+//
+//    NVIC->IP[2]= (NVIC->IP[2] & 0xFFFFFF00) | 0x00400000;
+//    NVIC->ISER[0] = 0x00000400;
+//
+//
+//
+
+    TimerA2_Init(&Toggle_LED, 512);// initialize 1000 Hz sine wave output
+
+    while (1) {
+            //while((TIMER_A1->CCTL[0] & 1) == 0); /* wait until the CCIFG flag is set */
+            //TIMER_A1->CCTL[0] &= ~1;            /* clear interrupt flag */
+                                   /* toggle green LED */
+        }
+    }
+
+
+int main1(void){
   Clock_Init48MHz();
   GPIO_Init();
   TExaS_Init(LOGICANALYZER_P4);
