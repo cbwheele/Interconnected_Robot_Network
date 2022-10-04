@@ -69,11 +69,12 @@ P2->OUT ^= 2;
 }
 
 
-void Toggle_LED(void) {
+void Timer_Done(void) {
     P2->OUT ^= 2;
 }
 
 
+// This main version is for timers
 int main(void) {
     /* initialize P2.1 for green LED */
     P2->SEL1 &= ~2;         /* configure P2.1 as simple I/O */
@@ -91,7 +92,7 @@ int main(void) {
 //
 //
 
-    TimerA2_Init(&Toggle_LED, 512);// initialize 1000 Hz sine wave output
+    TimerA2_Init(&Timer_Done, 512);// initialize 1000 Hz sine wave output
 
     while (1) {
             //while((TIMER_A1->CCTL[0] & 1) == 0); /* wait until the CCIFG flag is set */
