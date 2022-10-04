@@ -54,6 +54,9 @@ policies, either expressed or implied, of the FreeBSD Project.
 #include "./inc/TimerA2.h"
 
 
+volatile unsigned char timerDone = 0;
+
+
 void GPIO_Init(void){
   // initialize P4.3-P4.0 and make them outputs
   P4->SEL0 &= ~0x0F;
@@ -70,7 +73,8 @@ P2->OUT ^= 2;
 
 
 void Timer_Done(void) {
-    P2->OUT ^= 2;
+    TIMER_A2->CTL &= ~0x0030;       // halt Timer A2
+    timerDone = 1;
 }
 
 
@@ -92,14 +96,17 @@ int main(void) {
 //
 //
 
-    TimerA2_Init(&Timer_Done, 512);// initialize 1000 Hz sine wave output
+    TimerA2_Init(&Timer_Done, 512); // 512 = 1 second, and then the variable timerDone will go to 1 at the end of the timer!
 
     while (1) {
-            //while((TIMER_A1->CCTL[0] & 1) == 0); /* wait until the CCIFG flag is set */
-            //TIMER_A1->CCTL[0] &= ~1;            /* clear interrupt flag */
-                                   /* toggle green LED */
+        if (timerDone) {
+            timerDone = 0;
+            P2->OUT ^= 2;
+            TimerA2_Init(&Timer_Done, 1014);
         }
     }
+
+}
 
 
 int main1(void){
