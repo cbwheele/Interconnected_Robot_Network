@@ -156,10 +156,10 @@ void EUSCIA2_IRQHandler(void){
 // Input: pointer to a NULL-terminated string to be transferred
 // Output: none
 void UART1_OutString(char *pt){
-  /*while(*pt){
+  while(*pt){
     UART1_OutChar(*pt);
     pt++;
-  }*/
+  }
 }
 //------------UART1_FinishOutput------------
 // Wait for all transmission to finish
