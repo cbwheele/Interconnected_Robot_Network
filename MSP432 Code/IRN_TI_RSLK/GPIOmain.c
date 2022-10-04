@@ -51,7 +51,7 @@ policies, either expressed or implied, of the FreeBSD Project.
 #include "./inc/TExaS.h"
 #include "./inc/Motor.h"
 #include "./inc/PWM.h"
-
+#include "./inc/UART1.h"
 
 void GPIO_Init(void){
   // initialize P4.3-P4.0 and make them outputs
@@ -121,3 +121,40 @@ int main2(void){ // reset clears P4REN, P4DS, P4SEL0, P4SEL1
     step(9);  // motor is 1001
   }
 }
+
+int main3(void){        //UART code
+  char ch;
+  char string[20];
+  //uint32_t n;
+  Clock_Init48MHz();  // makes SMCLK=12 MHz
+  UART1_Initprintf(); // initialize UART and printf
+  UART1_OutString("\nTest program for UART driver\n\rUART0_OutChar examples\n");
+  for(ch='A'; ch<='Z'; ch=ch+1){// print the uppercase alphabet
+    UART1_OutChar(ch);
+  }
+  UART1_OutChar(LF);
+  for(ch='a'; ch<='z'; ch=ch+1){// print the lowercase alphabet
+    UART1_OutChar(ch);
+  }
+  //BookExamples();
+  while(1){
+    UART1_OutString("InString: ");
+    UART1_InString(string,19); // user enters a string
+    UART1_OutString(" OutString="); UART1_OutString(string); UART1_OutChar(LF);
+
+    /*UART1_OutString("InUDec: ");   n=UART0_InUDec();
+    UART1_OutString(" OutUDec=");  UART0_OutUDec(n); UART0_OutChar(LF);
+    UART1_OutString(" OutUFix1="); UART0_OutUFix1(n); UART0_OutChar(LF);
+    UART1_OutString(" OutUFix2="); UART0_OutUFix2(n); UART0_OutChar(LF);
+    printf(" Using printf= %d, %2d.%.1d,\n",n,n/10,n%10);
+
+    UART1_OutString("InUHex: ");   n=UART0_InUHex();
+    UART1_OutString(" OutUHex=");  UART0_OutUHex(n); UART0_OutChar(LF);
+    printf(" Using printf= %#x\n",n);*/
+    /*UART1_InString(string,19);
+    UART1_OutString(string);
+    UART1_OutChar(LF);*/
+
+  }
+}
+
