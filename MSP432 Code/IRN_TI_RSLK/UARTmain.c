@@ -79,7 +79,7 @@ void Timer_Done(void) {
 }
 
 // This main version is for timers
-int main1(void) {
+int main(void) {
     /* initialize P2.1 for green LED */
     P2->SEL1 &= ~2;         /* configure P2.1 as simple I/O */
     P2->SEL0 &= ~2;
@@ -108,7 +108,7 @@ int main1(void) {
 
 }
 
-int main3(void){
+int main1(void){
   Clock_Init48MHz();
   GPIO_Init();
   TExaS_Init(LOGICANALYZER_P4);
@@ -170,7 +170,7 @@ int main2(void){ // reset clears P4REN, P4DS, P4SEL0, P4SEL1
   }
 }
 
-int main(void){        //UART code
+int main3(void){        //=======================================UART code
   char ch;
   char string[20];
   //uint32_t n;
