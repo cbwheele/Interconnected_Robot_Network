@@ -53,6 +53,16 @@ policies, either expressed or implied, of the FreeBSD Project.
 #include "./inc/PWM.h"
 #include "./inc/UART1.h"
 
+// Figuring_out_timers
+#include "./inc/TimerA2.h"
+
+
+volatile unsigned char timerDone = 0;
+
+=======
+
+// Get_robots_moving
+
 void GPIO_Init(void){
   // initialize P4.3-P4.0 and make them outputs
   P4->SEL0 &= ~0x0F;
