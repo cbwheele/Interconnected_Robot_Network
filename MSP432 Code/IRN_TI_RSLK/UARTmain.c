@@ -51,13 +51,11 @@ policies, either expressed or implied, of the FreeBSD Project.
 #include "./inc/TExaS.h"
 #include "./inc/Motor.h"
 #include "./inc/PWM.h"
+#include "./inc/TimerA2.h"
 
-//#include "./inc/TimerA2.h"
-
+#include "./inc/UART1.h"    //serial communication
 
 volatile unsigned char timerDone = 0;
-
-#include "./inc/UART1.h"
 
 
 
@@ -68,7 +66,49 @@ void GPIO_Init(void){
   P4->DIR |= 0x0F;              // make stepper motor/LED pins out
 }
 
-int main(void){
+void TA1_0_IRQHandler(void){
+TIMER_A1->CCTL[0] &= ~0x0001; // ack
+// body
+P2->OUT ^= 2;
+}
+
+
+void Timer_Done(void) {
+    TIMER_A2->CTL &= ~0x0030;       // halt Timer A2
+    timerDone = 1;
+}
+
+// This main version is for timers
+int main1(void) {
+    /* initialize P2.1 for green LED */
+    P2->SEL1 &= ~2;         /* configure P2.1 as simple I/O */
+    P2->SEL0 &= ~2;
+    P2->DIR |= 2;           /* P2.1 set as output */
+    P2->OUT &= ~2;
+//
+//    TIMER_A1->CTL = 0x01D1;     /* ACLK, ID = /8, up mode, TA clear */
+//    TIMER_A1->CCR[0] = 512 - 1; /* for 1 sec */
+//    TIMER_A1->EX0 = 7;          /* IDEX = /8 */
+//
+//    NVIC->IP[2]= (NVIC->IP[2] & 0xFFFFFF00) | 0x00400000;
+//    NVIC->ISER[0] = 0x00000400;
+//
+//
+//
+
+    TimerA2_Init(&Timer_Done, 512); // 512 = 1 second, and then the variable timerDone will go to 1 at the end of the timer!
+
+    while (1) {
+        if (timerDone) {
+            timerDone = 0;
+            P2->OUT ^= 2;
+            TimerA2_Init(&Timer_Done, 1014);
+        }
+    }
+
+}
+
+int main3(void){
   Clock_Init48MHz();
   GPIO_Init();
   TExaS_Init(LOGICANALYZER_P4);
@@ -130,7 +170,7 @@ int main2(void){ // reset clears P4REN, P4DS, P4SEL0, P4SEL1
   }
 }
 
-int main3(void){        //UART code
+int main(void){        //UART code
   char ch;
   char string[20];
   //uint32_t n;
@@ -146,9 +186,9 @@ int main3(void){        //UART code
   }
   //BookExamples();
   while(1){
-    UART1_OutString("InString: ");
-    UART1_InString(string,19); // user enters a string
-    UART1_OutString(" OutString="); UART1_OutString(string); UART1_OutChar(LF);
+    //UART1_OutString("InString: ");
+    //UART1_InString(string,19); // user enters a string
+    //UART1_OutString(" OutString="); UART1_OutString(string); UART1_OutChar(LF);
 
     /*UART1_OutString("InUDec: ");   n=UART0_InUDec();
     UART1_OutString(" OutUDec=");  UART0_OutUDec(n); UART0_OutChar(LF);
@@ -159,9 +199,9 @@ int main3(void){        //UART code
     UART1_OutString("InUHex: ");   n=UART0_InUHex();
     UART1_OutString(" OutUHex=");  UART0_OutUHex(n); UART0_OutChar(LF);
     printf(" Using printf= %#x\n",n);*/
-    /*UART1_InString(string,19);
+    UART1_InString(string,19);
     UART1_OutString(string);
-    UART1_OutChar(LF);*/
+    UART1_OutChar(LF);
 
   }
 }
