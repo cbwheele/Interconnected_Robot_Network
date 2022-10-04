@@ -51,17 +51,15 @@ policies, either expressed or implied, of the FreeBSD Project.
 #include "./inc/TExaS.h"
 #include "./inc/Motor.h"
 #include "./inc/PWM.h"
-#include "./inc/UART1.h"
 
-// Figuring_out_timers
-#include "./inc/TimerA2.h"
+//#include "./inc/TimerA2.h"
 
 
 volatile unsigned char timerDone = 0;
 
-=======
+#include "./inc/UART1.h"
 
-// Get_robots_moving
+
 
 void GPIO_Init(void){
   // initialize P4.3-P4.0 and make them outputs
