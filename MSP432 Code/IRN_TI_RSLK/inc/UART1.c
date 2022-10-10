@@ -230,7 +230,7 @@ int uart1_rename(const char *old_name, const char *new_name){
     return 0;
 }
 
-//------------UART0_Initprintf------------
+//------------UART1_Initprintf------------
 // Initialize the UART for 115,200 baud rate (assuming 48 MHz bus clock),
 // 8 bit word length, no parity bits, one stop bit
 // Input: none

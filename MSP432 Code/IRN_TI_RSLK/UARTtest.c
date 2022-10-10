@@ -269,75 +269,79 @@ int main3(void){        //=======================================UART code
   }
 }
 
-int main(void){        //=======================================UART code
+int main5(void){        //=======================================UART code
+  char ch;
   char string[20];
-  char* pend;           // identify the space between numbers
+  char xcor[8];
+  char ycor[8];
+  char* pend;           // test
   float x1;
   float y1;
-  volatile unsigned char stage = 0;
-  volatile unsigned char timer_set = 0; //identify if timer is set or not
   //uint32_t n;
+  Clock_Init48MHz();  // makes SMCLK=12 MHz
+  UART1_Initprintf(); // initialize UART and printf
+  UART1_OutString("\nTest program for UART driver\n\rUART0_OutChar examples\n");
+  for(ch='A'; ch<='Z'; ch=ch+1){// print the uppercase alphabet
+    UART1_OutChar(ch);
+  }
+  UART1_OutChar(LF);
+  for(ch='a'; ch<='z'; ch=ch+1){// print the lowercase alphabet
+    UART1_OutChar(ch);
+  }
+  //BookExamples();
+  while(1){
+
+    UART1_InString(string,19);         //IMPORTANT: message separate with space " ", end with CR "\r"
+    x1 = strtof(string, &pend);
+    y1 = strtof(pend, NULL);
+    ftoa(x1, xcor, 4);
+    ftoa(y1, ycor, 4);
+    UART1_OutString("x is: ");
+    UART1_OutString(xcor);
+    UART1_OutChar(LF);
+    UART1_OutString("y is: ");
+    UART1_OutString(ycor);
+    UART1_OutChar(LF);
+  }
+}
+
+int main(void){        //=======================================UART + Motor code
+
+  char string[20];
+  char motor_on = 0;
+  char* pend;           // test if strtof can separate numbers
+  char timer_set = 0;   // test if motor can be controlled
+  float x1;
+  float y1;
+  float dis = 0;
   Clock_Init48MHz();  // makes SMCLK=12 MHz
   UART1_Initprintf(); // initialize UART and printf
   PWM_Init34(15000, 0, 0);
   Motor_Init();
-  //Start_Timer();    // Function to begin counting as the main function begins // maybe do not need
 
   while(1){
-      switch(stage){
-          default:
-              break;
+    if(!timer_set){
+        UART1_InString(string,19);         //IMPORTANT: message separate with space " ", end with CR "\r"
+        x1 = strtof(string, &pend);
+        y1 = strtof(pend, NULL);
 
-          case 1:                                   //Start up, does nothing
-              if(!timer_set){
-                  TimerA2_Init(&Timer_Done, 10240);  //wait for 20s to start up
-                  timer_set = 1;
-                  timerDone = 0;
-              }
-              if(timerDone){
-                  stage ++;
-                  timer_set = 0;
-              }
-              break;
-          case 2:                                   //Gather data
-              if(!timer_set){
-                  TimerA2_Init(&Timer_Done, 2048);  //wait for 4s to get data
-                  timer_set = 1;
-                  timerDone = 0;
-              }
-              //===============
-              UART1_InString(string,19);         //IMPORTANT: message separate with space " ", end with CR "\r"
-              x1 = strtof(string, &pend);
-              y1 = strtof(pend, NULL);
+        TimerA2_Init(&Timer_Done, 2048);  //wait for 4s to get data
+        dis = sqrt(pow(x1,2)+pow(y1,2));
 
-              if(sqrt(pow(x1,2)+pow(y1,2))>=2)
-                  Motor_Forward(200,200);
-              else
-                  Motor_Backward(200,200);
-              //===============
-              if(timerDone){
-                  stage ++;
-                  timer_set = 0;
-                  Motor_Stop();
-              }
-              break;
-          case 3:                                   //check coordinate and move motor
-              if(!timer_set){
-                  TimerA2_Init(&Timer_Done, 2048);  //move 4s
-                  timer_set = 1;
-                  timerDone = 0;
-              }
-              if(timerDone){
-                  stage = 2;                        //get data again
-                  timer_set = 0;
-              }
-              break;
-
-      }
-
-
-
-    UART1_OutChar(LF);
-
+        motor_on = 1;
+        timer_set = 1;
+        timerDone = 0;
+    }
+    if(motor_on){
+    if(dis>=2)
+        Motor_Forward(2000,2000);
+    else
+        Motor_Backward(2000,2000);
+    }
+    if(timerDone){
+        timer_set = 0;
+        Motor_Stop();
+        motor_on = 0;
+    }
   }
 }
