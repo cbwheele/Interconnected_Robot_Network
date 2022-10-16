@@ -6,12 +6,14 @@ import json
 
 hostname = socket.gethostname()
 UDP_IP = socket.gethostbyname(hostname)
-UDP_IP = "10.154.57.160"
+UDP_IP = "10.154.20.243"
 print("***Local ip:" + str(UDP_IP) + "***")
 UDP_PORT = 80
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 print("After socket")
+sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 sock.bind((UDP_IP, UDP_PORT))
+
 print("After bind")
 sock.listen(1)  # The number of connections received
 data, addr = sock.accept()

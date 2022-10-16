@@ -53,6 +53,11 @@ Coordinates getCoordinates(struct MyLink *p) {
     if (firstReading != -1 && secondReading != -1) {
     // Here I have both firstReading and secondReading as the distance to each of the two anchors:
 
+      // Swap readings to line up with Python script:
+      float temporaryVar = firstReading;
+      firstReading = secondReading;
+      secondReading = temporaryVar;
+      
       Serial.print("Two distances: ");
       Serial.print(firstReading);
       Serial.print(", ");
@@ -69,6 +74,8 @@ Coordinates getCoordinates(struct MyLink *p) {
       
       float cos_a = (b * b + c*c - a * a) / (2 * b * c);
       float x = b * cos_a;
+      Serial.print("1-cos_a*cos_a:");
+      Serial.print(1 - cos_a * cos_a);
       float y = b * sqrt(1 - cos_a * cos_a);
 
       // Set the coordinates inside of the returnCoordinates objects

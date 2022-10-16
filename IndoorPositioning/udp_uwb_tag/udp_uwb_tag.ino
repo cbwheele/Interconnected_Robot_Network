@@ -18,7 +18,7 @@
 
 const char *ssid = "ncsu";
 const char *password = "";
-const char *host = "10.154.57.160";
+const char *host = "10.154.20.243";
 WiFiClient client;
 
 struct MyLink *uwb_data;
@@ -30,6 +30,7 @@ HardwareSerial SerialPort(2); // use UART2
 
 void setup()
 {
+    delay(500);
     pinMode(RED_LED, OUTPUT);
     digitalWrite(RED_LED, LOW);
     pinMode(GRN_LED, OUTPUT);
@@ -56,6 +57,8 @@ void setup()
     
     Serial.print("IP Address:");
     Serial.println(WiFi.localIP());
+
+    delay(1000);
 
     if (client.connect(host, 80))
     {
@@ -99,11 +102,15 @@ void loop()
         Serial.print(", ");
         Serial.println(currentCoordinates.y);
 
+        if (!(isnan(currentCoordinates.x) || isnan(currentCoordinates.y))) {
+          // Only transmit to the MSP432 if the data is good
+          SerialPort.print(currentCoordinates.x,4);
+          SerialPort.print(" ");
+          SerialPort.print(currentCoordinates.y,4);
+          SerialPort.print('\r');
+        }
 
-        SerialPort.print(currentCoordinates.x,4);
-        SerialPort.print(":");
-        SerialPort.print(currentCoordinates.y,4);
-        SerialPort.println();
+        
     }
 }
 
@@ -111,14 +118,14 @@ void newRange()
 {
     char c[30];
 
-    Serial.print("from: ");
-    Serial.print(DW1000Ranging.getDistantDevice()->getShortAddress(), HEX);
-    Serial.print("\t Range: ");
-    Serial.print(DW1000Ranging.getDistantDevice()->getRange());
-    Serial.print(" m");
-    Serial.print("\t RX power: ");
-    Serial.print(DW1000Ranging.getDistantDevice()->getRXPower());
-    Serial.println(" dBm");
+    //Serial.print("from: ");
+    //Serial.print(DW1000Ranging.getDistantDevice()->getShortAddress(), HEX);
+    //Serial.print("\t Range: ");
+    //Serial.print(DW1000Ranging.getDistantDevice()->getRange());
+    //Serial.print(" m");
+    //Serial.print("\t RX power: ");
+    //Serial.print(DW1000Ranging.getDistantDevice()->getRXPower());
+    //Serial.println(" dBm");
     fresh_link(uwb_data, DW1000Ranging.getDistantDevice()->getShortAddress(), DW1000Ranging.getDistantDevice()->getRange(), DW1000Ranging.getDistantDevice()->getRXPower());
 }
 
