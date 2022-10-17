@@ -59,6 +59,8 @@ policies, either expressed or implied, of the FreeBSD Project.
 #include "./inc/UART1.h"    //serial communication
 
 volatile unsigned char timerDone = 0;
+ uint32_t RxPutI;      // should be 0 to SIZE-1
+ uint32_t RxGetI;      // should be 0 to SIZE-1
 
  // added for test =========================================================================
 void reverse(char* str, int len)
@@ -141,203 +143,213 @@ void Timer_Done(void) {
     timerDone = 1;
 }
 
-// This main version is for timers
-int main4(void) {
-    /* initialize P2.1 for green LED */
-    P2->SEL1 &= ~2;         /* configure P2.1 as simple I/O */
-    P2->SEL0 &= ~2;
-    P2->DIR |= 2;           /* P2.1 set as output */
-    P2->OUT &= ~2;
-//
-//    TIMER_A1->CTL = 0x01D1;     /* ACLK, ID = /8, up mode, TA clear */
-//    TIMER_A1->CCR[0] = 512 - 1; /* for 1 sec */
-//    TIMER_A1->EX0 = 7;          /* IDEX = /8 */
-//
-//    NVIC->IP[2]= (NVIC->IP[2] & 0xFFFFFF00) | 0x00400000;
-//    NVIC->ISER[0] = 0x00000400;
-//
-//
-//
-
-    TimerA2_Init(&Timer_Done, 512); // 512 = 1 second, and then the variable timerDone will go to 1 at the end of the timer!
-
-    while (1) {
-        if (timerDone) {
-            timerDone = 0;
-            P2->OUT ^= 2;
-            TimerA2_Init(&Timer_Done, 1014);
-        }
-    }
-
-}
-
-int main1(void){
-  Clock_Init48MHz();
-  GPIO_Init();
-  TExaS_Init(LOGICANALYZER_P4);
-
-  Init_Our_Custom_Ports(); // This will turn on the Red LED
-
-  PWM_Init34(15000, 0, 0);
-  Motor_Init();
-
-
-  // First, we need to wait until coordinates start being sent over UART
-  
-  // Then, we will want to delay for maybe 10 seconds to allow those coordinates to settle
-
-  // Then, read in those coordinates for five seconds and save the average of those as "starting location"
-
-  // Drive forward for two seconds
-
-  // Wait five seconds for coordinates to stabilize
-
-  // Read in the coordinates over five seconds (average) and save that as "secondary location"
-
-  // Calculate based on starting location and secondary location
-
-  // Turn in direction of the starting point
-
-  // Drive for distance until the starting point
-
-
-  Motor_Forward(5000,5000);
-  Clock_Delay1ms(1000);
-
-  Motor_Stop();
-
-  
-
-  while(1){
-
-
-
-  }
-}
-
-// Program 2.13 from Volume 2
-#define STEPPER  (*((volatile uint8_t *)0x40004C23))  /* Port 4 Output, bits 3-0 are stepper motor */
-static void step(uint8_t n){
-  STEPPER = (STEPPER&~0x0F)|n;  // output to stepper causing it to step once
-  Clock_Delay1ms(100);          // 100ms delay 10 steps/sec
-}
-int main2(void){ // reset clears P4REN, P4DS, P4SEL0, P4SEL1
-  Clock_Init48MHz();
-  TExaS_Init(LOGICANALYZER_P4);
-  GPIO_Init();
-  while(1){
-    step(5);  // motor is 0101
-    step(6);  // motor is 0110
-    step(10); // motor is 1010
-    step(9);  // motor is 1001
-  }
-}
-
-int main3(void){        //=======================================UART code
-  char ch;
-  char string[20];
-  //uint32_t n;
-  Clock_Init48MHz();  // makes SMCLK=12 MHz
-  UART1_Initprintf(); // initialize UART and printf
-  UART1_OutString("\nTest program for UART driver\n\rUART0_OutChar examples\n");
-  for(ch='A'; ch<='Z'; ch=ch+1){// print the uppercase alphabet
-    UART1_OutChar(ch);
-  }
-  UART1_OutChar(LF);
-  for(ch='a'; ch<='z'; ch=ch+1){// print the lowercase alphabet
-    UART1_OutChar(ch);
-  }
-  //BookExamples();
-  while(1){
-    //UART1_OutString("InString: ");
-    //UART1_InString(string,19); // user enters a string
-    //UART1_OutString(" OutString="); UART1_OutString(string); UART1_OutChar(LF);
-
-    /*UART1_OutString("InUDec: ");   n=UART0_InUDec();
-    UART1_OutString(" OutUDec=");  UART0_OutUDec(n); UART0_OutChar(LF);
-    UART1_OutString(" OutUFix1="); UART0_OutUFix1(n); UART0_OutChar(LF);
-    UART1_OutString(" OutUFix2="); UART0_OutUFix2(n); UART0_OutChar(LF);
-    printf(" Using printf= %d, %2d.%.1d,\n",n,n/10,n%10);
-
-    UART1_OutString("InUHex: ");   n=UART0_InUHex();
-    UART1_OutString(" OutUHex=");  UART0_OutUHex(n); UART0_OutChar(LF);
-    printf(" Using printf= %#x\n",n);*/
-    UART1_InString(string,19);
-    UART1_OutString(string);
-    UART1_OutChar(LF);
-
-  }
-}
-
 int main(void){        //=======================================UART code
   char string[20];
   char* pend;           // identify the space between numbers
   float x1;
   float y1;
-  volatile unsigned char stage = 0;
+  unsigned char stage = 0;
   volatile unsigned char timer_set = 0; //identify if timer is set or not
-  //uint32_t n;
+
+  char num_of_cor = 0;
+  float first_x_val[8];
+  float first_y_val[8];
+
+  float second_x_val[8];
+  float second_y_val[8];
+
+
+
+  float initial_x_cor;
+  float initial_y_cor;
+  float second_x_cor;
+  float second_y_cor;
+
+  float north_angle;
+
   Clock_Init48MHz();  // makes SMCLK=12 MHz
   UART1_Initprintf(); // initialize UART and printf
   PWM_Init34(15000, 0, 0);
   Motor_Init();
-  //Start_Timer();    // Function to begin counting as the main function begins // maybe do not need
+
 
   while(1){
       switch(stage){
-          default:
-              break;
-
-          case 1:                                   //Start up, does nothing
+          case 0:                 //Start up, does nothing and wait for 30s
+          {
               if(!timer_set){
-                  TimerA2_Init(&Timer_Done, 10240);  //wait for 20s to start up
+                  TimerA2_Init(&Timer_Done, 512*30);  //wait for 30s to start up
                   timer_set = 1;
                   timerDone = 0;
               }
+              num_of_cor = 0;
               if(timerDone){
                   stage ++;
                   timer_set = 0;
+                  num_of_cor = 0;
               }
               break;
-          case 2:                                   //Gather data
-              if(!timer_set){
-                  TimerA2_Init(&Timer_Done, 2048);  //wait for 4s to get data
-                  timer_set = 1;
-                  timerDone = 0;
-              }
+          }
+          case 1:              //Gather data
+          {
               //===============
+              RxPutI = 0;
+              RxGetI = 0;
               UART1_InString(string,19);         //IMPORTANT: message separate with space " ", end with CR "\r"
               x1 = strtof(string, &pend);
               y1 = strtof(pend, NULL);
+              first_x_val[num_of_cor] = x1;
+              first_y_val[num_of_cor] = y1;
+              num_of_cor++;
+              if(num_of_cor>=8){
+                  timer_set=0;
+                  stage++;
+              }
+              break;
+          }
+          case 2:                     //Averaging
+          {
+              float x_sum = 0;
+              float y_sum = 0;
+              for (int i=0; i < 8; i++) {
+                  x_sum += first_x_val[i];
+                  y_sum += first_y_val[i];
+              }
+              initial_x_cor = x_sum / 8;
+              initial_y_cor = y_sum / 8;
 
-              if(sqrt(pow(x1,2)+pow(y1,2))>=2)
-                  Motor_Forward(200,200);
-              else
-                  Motor_Backward(200,200);
-              //===============
+              // Now, initial_x_cor and initial_y_cor have the initial coordinate.
+
+              stage++;                        //Go ahead and move forward
+              break;
+          }
+
+          case 3:               // Move forward
+          {
+              if(!timer_set){
+                  TimerA2_Init(&Timer_Done, 512*8);  //move 8s
+                  timer_set = 1;
+                  timerDone = 0;
+              }
+                  Motor_Forward(2100,2000);         //Left Right ratio 2100:2000
+
               if(timerDone){
-                  stage ++;
+                  stage ++;                        //get data again
                   timer_set = 0;
                   Motor_Stop();
               }
               break;
-          case 3:                                   //check coordinate and move motor
+          }
+          case 4:               // Wait for getting location
+          {
               if(!timer_set){
-                  TimerA2_Init(&Timer_Done, 2048);  //move 4s
+                  TimerA2_Init(&Timer_Done, 512*10);  //wait for 10s to start up
                   timer_set = 1;
                   timerDone = 0;
               }
+              Motor_Stop();
+              num_of_cor = 0;
               if(timerDone){
-                  stage = 2;                        //get data again
+                  stage ++;
                   timer_set = 0;
               }
               break;
+          }
+
+          case 5:               // Get  second coordinates
+          {
+              RxPutI = 0;
+              RxGetI = 0;
+              UART1_InString(string,19);         //IMPORTANT: message separate with space " ", end with CR "\r"
+              x1 = strtof(string, &pend);
+              y1 = strtof(pend, NULL);
+              second_x_val[num_of_cor] = x1;
+              second_y_val[num_of_cor] = y1;
+              num_of_cor++;
+              if(num_of_cor>=8){
+                  timer_set=0;
+                  stage++;
+              }
+              break;
+          }
+
+          case 6:               // Averaging
+          {
+              float x_sum = 0;
+              float y_sum = 0;
+              for (int i=0; i < 8; i++) {
+                  x_sum += second_x_val[i];
+                  y_sum += second_y_val[i];
+              }
+              second_x_cor = x_sum / 8;
+              second_y_cor = y_sum / 8;
+
+                            // Now, initial_x_cor and initial_y_cor have the initial coordinate.
+              stage++;                        //go back and move motors
+
+              break;
+          }
+
+          case 7:       //
+          {
+              float change_x = second_x_cor - initial_x_cor;
+              float change_y = second_y_cor - initial_y_cor;
+              char going_up = (change_y < 0);
+              char going_right = (change_x > 0);
+
+              if (going_up && going_right) {
+                  north_angle = 90 -atan(-change_y/change_x)*180/3.14159;//atan2(-change_y,change_x)*180/3.14159;
+              }
+              else if (going_up && !going_right) {
+                 // north_angle = 270 - atan2(-change_y,change_x)*180/3.14159;
+                  north_angle = 270 - atan(-change_y/change_x)*180/3.14159;
+
+              }
+              else if (!going_up && going_right) {          //position 2 on troxler lab floor , might be right, may need to -360 degrees
+                  north_angle = 90 + atan(change_y/change_x)*180/3.14159;
+
+              }
+              else if (!going_up && !going_right) {
+                  north_angle = 270  + atan(change_y/change_x)*180/3.14159;
+              }
+              else {
+                  // This is really bad
+                  int n_a;
+              }
+
+              stage++;
+              timer_set = 0;
+              break;
+          }
+          case 8:
+          {
+              if(!timer_set){
+                        TimerA2_Init(&Timer_Done, 9.9833*north_angle);  //wait for 30s to start up
+                        timer_set = 1;
+                        timerDone = 0;
+                    }
+                    Motor_Left(2000,2000);
+                    if(timerDone){
+                        timer_set = 0;
+                        Motor_Stop();
+                        stage++;
+                    }
+                    break;
+          }
+          case 9:
+          {
+              int stopatthispoint = 0;
+              break;
+          }
+          default:
+          {
+              break;
+          }
+
 
       }
 
 
-
-    UART1_OutChar(LF);
-
   }
 }
+

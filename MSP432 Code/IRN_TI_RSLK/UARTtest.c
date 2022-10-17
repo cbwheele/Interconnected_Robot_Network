@@ -277,6 +277,7 @@ int main5(void){        //=======================================UART code
   char* pend;           // test
   float x1;
   float y1;
+
   //uint32_t n;
   Clock_Init48MHz();  // makes SMCLK=12 MHz
   UART1_Initprintf(); // initialize UART and printf
@@ -290,7 +291,6 @@ int main5(void){        //=======================================UART code
   }
   //BookExamples();
   while(1){
-
     UART1_InString(string,19);         //IMPORTANT: message separate with space " ", end with CR "\r"
     x1 = strtof(string, &pend);
     y1 = strtof(pend, NULL);
@@ -305,7 +305,7 @@ int main5(void){        //=======================================UART code
   }
 }
 
-int main(void){        //=======================================UART + Motor code
+int main7(void){        //=======================================UART + Motor code
 
   char string[20];
   char motor_on = 0;
@@ -321,10 +321,11 @@ int main(void){        //=======================================UART + Motor cod
 
   while(1){
     if(!timer_set){
+        UART1_OutString("Waiting for input");
         UART1_InString(string,19);         //IMPORTANT: message separate with space " ", end with CR "\r"
         x1 = strtof(string, &pend);
         y1 = strtof(pend, NULL);
-
+        UART1_OutString("Got data");
         TimerA2_Init(&Timer_Done, 2048);  //wait for 4s to get data
         dis = sqrt(pow(x1,2)+pow(y1,2));
 
@@ -333,15 +334,99 @@ int main(void){        //=======================================UART + Motor cod
         timerDone = 0;
     }
     if(motor_on){
-    if(dis>=2)
-        Motor_Forward(2000,2000);
-    else
-        Motor_Backward(2000,2000);
+        UART1_OutString("Motor is on");
+        if(dis>=2)
+            Motor_Forward(2000,2000);
+        else
+            Motor_Backward(2000,2000);
+        }
+    else{
+        UART1_OutString("Motor not on");
+        Motor_Stop();
     }
     if(timerDone){
-        timer_set = 0;
+        UART1_OutString("Reset timer");
         Motor_Stop();
+        timer_set = 0;
         motor_on = 0;
     }
+  }
+}
+
+int main6(void){        //=======================================UART code
+  char string[20];
+  char* pend;           // test
+  float x[5];
+  float y[5];
+  char timer_set = 0;   // test if motor can be controlled
+  char i = 0;           // counter
+  char f[0]=0;
+  //uint32_t n;
+  Clock_Init48MHz();  // makes SMCLK=12 MHz
+  UART1_Initprintf(); // initialize UART and printf
+  UART1_OutString("\nTest program for UART driver\n\rUART0_OutChar examples\n");
+
+  while(1){
+      if(!timer_set){
+          TimerA2_Init(&Timer_Done, 2048);  //wait for 4s to get data
+          timer_set = 1;
+          timerDone = 0;
+          }
+      UART1_OutString("Waiting for input ");
+      UART1_InString(string,19);         //IMPORTANT: message separate with space " ", end with CR "\r"
+      x[i] = strtof(string, &pend);
+      y[i] = strtof(pend, NULL);
+      i++;
+      f[0]++;
+      UART1_OutString("Got ");
+
+      UART1_OutString(f);
+      UART1_OutString(" Coordinates\r");
+      if(timerDone){
+          timer_set = 0;
+          UART1_OutString("reset timer\r");
+          i=0;
+      }
+
+  }
+}
+
+int main(void){        //=======================================UART code
+  char timer_set = 0;   // test if motor can be controlled
+  char motor_on = 0;
+  Clock_Init48MHz();  // makes SMCLK=12 MHz
+  PWM_Init34(15000, 0, 0);
+  Motor_Init();
+  char mode = 0;
+  while(1){
+      switch(mode){
+      case 0:
+          if(!timer_set){
+              TimerA2_Init(&Timer_Done, 512*4);  //wait for 30s to start up
+              timer_set = 1;
+              timerDone = 0;
+          }
+          if(timerDone){
+              timer_set = 0;
+              mode ++;
+          }
+          break;
+      case 1:
+      if(!timer_set){
+          TimerA2_Init(&Timer_Done, 512*8);  //wait for 30s to start up
+          timer_set = 1;
+          timerDone = 0;
+          motor_on = 1;
+      }
+      if(motor_on)
+      Motor_Forward(2100,2000);         //Left Right ratio 2100:2000
+      if(timerDone){
+          //timer_set = 0;
+          Motor_Stop();
+          motor_on =0;
+      }
+      break;
+
+      }
   }
 }

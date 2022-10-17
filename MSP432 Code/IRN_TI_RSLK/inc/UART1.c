@@ -54,8 +54,8 @@ policies, either expressed or implied, of the FreeBSD Project.
 #define FIFOSIZE   256       // size of the FIFOs (must be power of 2)
 #define FIFOSUCCESS 1        // return value on success
 #define FIFOFAIL    0        // return value on failure
-uint32_t RxPutI;      // should be 0 to SIZE-1
-uint32_t RxGetI;      // should be 0 to SIZE-1 
+extern uint32_t RxPutI;      // should be 0 to SIZE-1
+extern uint32_t RxGetI;      // should be 0 to SIZE-1
 uint32_t RxFifoLost;  // should be 0 
 uint8_t RxFIFO[FIFOSIZE];
 void RxFifo_Init(void){
