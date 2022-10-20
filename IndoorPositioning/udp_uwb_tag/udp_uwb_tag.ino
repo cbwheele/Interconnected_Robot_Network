@@ -18,7 +18,7 @@
 
 const char *ssid = "ncsu";
 const char *password = "";
-const char *host = "10.154.20.243";
+const char *host = "10.154.27.73";
 WiFiClient client;
 
 struct MyLink *uwb_data;
@@ -37,7 +37,7 @@ void setup()
     digitalWrite(GRN_LED, LOW);
   
     Serial.begin(115200);
-    SerialPort.begin(115200, SERIAL_8N1, 16, 17);
+    SerialPort.begin(115200, SERIAL_8N1, 17, 16);
 
     Serial.println("WiFi Mac Address:");
     Serial.println(WiFi.macAddress());
