@@ -297,35 +297,45 @@ int main(void){        //=======================================UART code
               float change_y = second_y_cor - initial_y_cor;
               char going_up = (change_y < 0);
               char going_right = (change_x > 0);
+              float extra_left_turn;
 
               if (going_up && going_right) {
                   north_angle_atan = 90 +atan(change_y/change_x)*180/3.14159;
-                  north_angle_atan2 = 90 +atan2(change_y,change_x)*180/3.14159;
+                  //north_angle_atan2 = 90 +atan2(change_y,change_x)*180/3.14159;
               }
               else if (going_up && !going_right) {
                   north_angle_atan = 270 + atan(change_y/change_x)*180/3.14159;
-                  north_angle_atan2 = 270 + atan2(change_y,change_x)*180/3.14159;
+                  //north_angle_atan2 = 270 + atan2(change_y,change_x)*180/3.14159;
 
               }
               else if (!going_up && going_right) {
                   north_angle_atan = 90 + atan(change_y/change_x)*180/3.14159;
-                  north_angle_atan2 =90 + atan2(change_y,change_x)*180/3.14159;
+                  //north_angle_atan2 =90 + atan2(change_y,change_x)*180/3.14159;
 
               }
               else if (!going_up && !going_right) {
                   north_angle_atan = 270  + atan(change_y/change_x)*180/3.14159;
-                  north_angle_atan2 =  270  + atan2(change_y,change_x)*180/3.14159;
+                  //north_angle_atan2 =  270  + atan2(change_y,change_x)*180/3.14159;
               }
               else {
                   // This is really bad
                   int n_a;
               }
+              //=========================Calculate
+              if(second_x_cor > 1.5){
+                  extra_left_turn = atan((second_x_cor - 1.5)/second_y_cor);
+                  north_angle_atan = (int)(north_angle_atan + extra_left_turn)  % 360;
+              }
+                  else{
+                      extra_left_turn = atan((1.5 - second_x_cor)/second_y_cor);
+                      north_angle_atan = (int)(north_angle_atan - extra_left_turn) % 360;
+                  }
 
               stage++;
               timer_set = 0;
               break;
           }
-          case 8:
+          case 8:   //Turn to north //and face the center of anchor
           {
               if(!timer_set){
                         TimerA2_Init(&Timer_Done, 9.9833*north_angle_atan);  //wait for 30s to start up
@@ -340,7 +350,7 @@ int main(void){        //=======================================UART code
                     }
                     break;
           }
-          case 9:
+          case 9:   // Move towards to center
           {
               int stopatthispoint = 0;
               break;
