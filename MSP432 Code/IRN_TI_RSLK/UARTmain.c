@@ -165,7 +165,8 @@ int main(void){        //=======================================UART code
   float second_x_cor;
   float second_y_cor;
 
-  float north_angle;
+  float north_angle_atan;
+  float north_angle_atan2;
 
   Clock_Init48MHz();  // makes SMCLK=12 MHz
   UART1_Initprintf(); // initialize UART and printf
@@ -298,19 +299,22 @@ int main(void){        //=======================================UART code
               char going_right = (change_x > 0);
 
               if (going_up && going_right) {
-                  north_angle = 90 -atan(-change_y/change_x)*180/3.14159;//atan2(-change_y,change_x)*180/3.14159;
+                  north_angle_atan = 90 +atan(change_y/change_x)*180/3.14159;
+                  north_angle_atan2 = 90 +atan2(change_y,change_x)*180/3.14159;
               }
               else if (going_up && !going_right) {
-                 // north_angle = 270 - atan2(-change_y,change_x)*180/3.14159;
-                  north_angle = 270 - atan(-change_y/change_x)*180/3.14159;
+                  north_angle_atan = 270 + atan(change_y/change_x)*180/3.14159;
+                  north_angle_atan2 = 270 + atan2(change_y,change_x)*180/3.14159;
 
               }
-              else if (!going_up && going_right) {          //position 2 on troxler lab floor , might be right, may need to -360 degrees
-                  north_angle = 90 + atan(change_y/change_x)*180/3.14159;
+              else if (!going_up && going_right) {
+                  north_angle_atan = 90 + atan(change_y/change_x)*180/3.14159;
+                  north_angle_atan2 =90 + atan2(change_y,change_x)*180/3.14159;
 
               }
               else if (!going_up && !going_right) {
-                  north_angle = 270  + atan(change_y/change_x)*180/3.14159;
+                  north_angle_atan = 270  + atan(change_y/change_x)*180/3.14159;
+                  north_angle_atan2 =  270  + atan2(change_y,change_x)*180/3.14159;
               }
               else {
                   // This is really bad
@@ -324,7 +328,7 @@ int main(void){        //=======================================UART code
           case 8:
           {
               if(!timer_set){
-                        TimerA2_Init(&Timer_Done, 9.9833*north_angle);  //wait for 30s to start up
+                        TimerA2_Init(&Timer_Done, 9.9833*north_angle_atan);  //wait for 30s to start up
                         timer_set = 1;
                         timerDone = 0;
                     }
