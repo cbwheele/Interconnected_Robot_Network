@@ -171,9 +171,9 @@ int main(void){        // Main State Machine
                   TimerA2_Init(&Timer_Done, 512*8);  //move 8s
                   timer_set = 1;
                   timerDone = 0;
-                  Motor_Forward(2000,2000);         //Left Right ratio 2100:2000, now use tachometer to measure =========================== Editing
-              }
 
+              }
+              Motor_Forward(2000,2000);         //Left Right ratio 2100:2000, now use tachometer to measure =========================== Editing
 
               if(timerDone){
                   stage ++;                        //get data again
