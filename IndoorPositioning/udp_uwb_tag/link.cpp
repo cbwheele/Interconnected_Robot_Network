@@ -34,8 +34,12 @@ Coordinates getCoordinates(struct MyLink *p) {
         Serial.println(temp->anchor_addr);
         Serial.println(temp->range[0]);
 
-        if (firstReading == -1) {
-          firstReading = temp->range[0];
+// 6018 on left
+// 6019 on right
+
+        
+        if (temp->anchor_addr == 6019) {
+          firstReading = temp->range[0];          
         } else {
           secondReading = temp->range[0];
         }
@@ -52,7 +56,7 @@ Coordinates getCoordinates(struct MyLink *p) {
     
     if (firstReading != -1 && secondReading != -1) {
     // Here I have both firstReading and secondReading as the distance to each of the two anchors:
-
+      
       Serial.print("Two distances: ");
       Serial.print(firstReading);
       Serial.print(", ");
@@ -69,6 +73,8 @@ Coordinates getCoordinates(struct MyLink *p) {
       
       float cos_a = (b * b + c*c - a * a) / (2 * b * c);
       float x = b * cos_a;
+      Serial.print("1-cos_a*cos_a:");
+      Serial.print(1 - cos_a * cos_a);
       float y = b * sqrt(1 - cos_a * cos_a);
 
       // Set the coordinates inside of the returnCoordinates objects
