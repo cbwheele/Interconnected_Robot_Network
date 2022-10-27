@@ -55,74 +55,15 @@ policies, either expressed or implied, of the FreeBSD Project.
 #include "./inc/Motor.h"
 #include "./inc/PWM.h"
 #include "./inc/TimerA2.h"
+#include "./inc/Tachometer.h"
 
 #include "./inc/UART1.h"    //serial communication
 
 volatile unsigned char timerDone = 0;
  uint32_t RxPutI;      // should be 0 to SIZE-1
  uint32_t RxGetI;      // should be 0 to SIZE-1
-
- // added for test =========================================================================
-void reverse(char* str, int len)
-{
-    int i = 0, j = len - 1, temp;
-    while (i < j) {
-        temp = str[i];
-        str[i] = str[j];
-        str[j] = temp;
-        i++;
-        j--;
-    }
-}
-
-// Converts a given integer x to string str[].
-// d is the number of digits required in the output.
-// If d is more than the number of digits in x,
-// then 0s are added at the beginning.
-int intToStr(int x, char str[], int d)
-{
-    int i = 0;
-    while (x) {
-        str[i++] = (x % 10) + '0';
-        x = x / 10;
-    }
-
-    // If number of digits required is more, then
-    // add 0s at the beginning
-    while (i < d)
-        str[i++] = '0';
-
-    reverse(str, i);
-    str[i] = '\0';
-    return i;
-}
-
-// Converts a floating-point/double number to a string.
-void ftoa(float n, char* res, int afterpoint)
-{
-    // Extract integer part
-    int ipart = (int)n;
-
-    // Extract floating part
-    float fpart = n - (float)ipart;
-
-    // convert integer part to string
-    int i = intToStr(ipart, res, 0);
-
-    // check for display option after point
-    if (afterpoint != 0) {
-        res[i] = '.'; // add dot
-
-        // Get the value of fraction part upto given no.
-        // of points after dot. The third parameter
-        // is needed to handle cases like 233.007
-        fpart = fpart * pow(10, afterpoint);
-
-        intToStr((int)fpart, res + i + 1, afterpoint);
-    }
-}
-
-//==================================================================================
+float distance_to_travel = 0;
+float x_leg_of_tri = 0;
 
 void GPIO_Init(void){
   // initialize P4.3-P4.0 and make them outputs
@@ -143,7 +84,7 @@ void Timer_Done(void) {
     timerDone = 1;
 }
 
-int main(void){        //=======================================UART code
+int main(void){        // Main State Machine
   char string[20];
   char* pend;           // identify the space between numbers
   float x1;
@@ -166,13 +107,12 @@ int main(void){        //=======================================UART code
   float second_y_cor;
 
   float north_angle_atan;
-  float north_angle_atan2;
 
   Clock_Init48MHz();  // makes SMCLK=12 MHz
   UART1_Initprintf(); // initialize UART and printf
   PWM_Init34(15000, 0, 0);
   Motor_Init();
-
+  Tachometer_Init();
 
   while(1){
       switch(stage){
@@ -231,8 +171,9 @@ int main(void){        //=======================================UART code
                   TimerA2_Init(&Timer_Done, 512*8);  //move 8s
                   timer_set = 1;
                   timerDone = 0;
+                  Motor_Forward(2000,2000);         //Left Right ratio 2100:2000, now use tachometer to measure =========================== Editing
               }
-                  Motor_Forward(2100,2000);         //Left Right ratio 2100:2000
+
 
               if(timerDone){
                   stage ++;                        //get data again
@@ -323,11 +264,13 @@ int main(void){        //=======================================UART code
               }
               //=========================Calculate
               if(second_x_cor > 1.5){
-                  extra_left_turn = atan((second_x_cor - 1.5)/second_y_cor);
+                  x_leg_of_tri = second_x_cor - 1.5;
+                  extra_left_turn = atan(x_leg_of_tri/second_y_cor);
                   north_angle_atan = (int)(north_angle_atan + extra_left_turn)  % 360;
               }
                   else{
-                      extra_left_turn = atan((1.5 - second_x_cor)/second_y_cor);
+                      x_leg_of_tri = second_x_cor - 1.5;
+                      extra_left_turn = atan(x_leg_of_tri/second_y_cor);
                       north_angle_atan = (int)(north_angle_atan - extra_left_turn) % 360;
                   }
 
@@ -352,7 +295,27 @@ int main(void){        //=======================================UART code
           }
           case 9:   // Move towards to center
           {
-              int stopatthispoint = 0;
+              distance_to_travel = sqrt(pow(x_leg_of_tri, 2)+pow(second_x_cor, 2));         //10sec 1 unit
+              if(!timer_set){
+                  TimerA2_Init(&Timer_Done, distance_to_travel*20*512);  //wait for 30s to start up
+                  timer_set = 1;
+                  timerDone = 0;
+              }
+              Motor_Forward(2000,2000);
+              if(timerDone){
+                  timer_set = 0;
+                  Motor_Stop();
+                  stage++;
+              }
+              break;
+          }
+          case 10:
+          {
+              break;
+          }
+          case 11:
+          {
+              int stophere;
               break;
           }
           default:
@@ -366,4 +329,5 @@ int main(void){        //=======================================UART code
 
   }
 }
+
 
