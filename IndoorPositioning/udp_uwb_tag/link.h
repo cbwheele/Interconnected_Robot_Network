@@ -11,6 +11,11 @@ struct MyLink
 class Coordinates
 {
 public:
+  Coordinates() {
+    x = 0.0;
+    y = 0.0;
+  }
+  
   Coordinates(float x_cord, float y_cord) {
     x = x_cord;
     y = y_cord;

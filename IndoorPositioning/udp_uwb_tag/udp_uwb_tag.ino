@@ -3,6 +3,9 @@
 #include <WiFi.h>
 #include "link.h"
 #include <HardwareSerial.h>
+#include <cstring>
+
+using namespace std;
 
 
 
@@ -18,13 +21,21 @@
 
 const char *ssid = "ncsu";
 const char *password = "";
-const char *host = "10.154.27.73";
+const char *host = "10.154.51.2";
 WiFiClient client;
 
 struct MyLink *uwb_data;
 int index_num = 0;
 long runtime = 0;
 String all_json = "";
+
+bool shouldSendCoordinatesToMSP432 = false;
+bool shouldSendCoordinatesToSerial = false;
+bool shouldSendCoordinatesToComputer = false;
+
+
+
+int state = 0;
 
 HardwareSerial SerialPort(2); // use UART2
 
@@ -82,36 +93,72 @@ void setup()
     DW1000Ranging.startAsTag("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_LONGDATA_RANGE_LOWPOWER);
 
     uwb_data = init_link();
-
-    
-    
 }
 
+// The loop function contains all of the code that will be run continually on the ESP32
 void loop()
 {
-    DW1000Ranging.loop();
+    DW1000Ranging.loop(); // This function must be called so that the DWM module is kept up-to-date on it's localization
+
+    // Every 1000ms (every second), send the coordinates on
     if ((millis() - runtime) > 1000)
     {
-        Coordinates currentCoordinates = getCoordinates(uwb_data);
-        make_link_json(uwb_data, &all_json);
-        send_udp(&all_json);
-        runtime = millis();
-
-        Serial.print("From Current Coordinates: ");
-        Serial.print(currentCoordinates.x);
-        Serial.print(", ");
-        Serial.println(currentCoordinates.y);
-
-        if (!(isnan(currentCoordinates.x) || isnan(currentCoordinates.y))) {
-          // Only transmit to the MSP432 if the data is good
-          SerialPort.print(currentCoordinates.x,4);
-          SerialPort.print(" ");
-          SerialPort.print(currentCoordinates.y,4);
-          SerialPort.print('\r');
-        }
-
-        
+        handleCoordinatesEverySecond();
+        runtime = millis(); // Reset the runtime so that this function will be caled again in 
     }
+
+    loopStateMachine();
+}
+
+String readyAtStr;
+Coordinates firstReadingCoordinates = Coordinates();
+
+
+void loopStateMachine() {
+
+    switch (state) {
+        case 0: // Wait until reading is not null and then send it to computer
+            firstReadingCoordinates = getCoordinates(uwb_data);
+            if (!(isnan(firstReadingCoordinates.x) || isnan(firstReadingCoordinates.y) || firstReadingCoordinates.x == 0 || firstReadingCoordinates.y == 0)) {
+                // Move on to the next state
+                readyAtStr = "Ready: ";
+                readyAtStr += firstReadingCoordinates.x;
+                readyAtStr += ":";
+                readyAtStr += firstReadingCoordinates.y;
+
+                
+                send_udp(&readyAtStr);
+
+                state++; // Move on to next state
+            }
+
+            break;
+
+        case 1:
+            // Read incoming message
+            if (client.available() > 0) {
+                Serial.print("\n\n");
+                Serial.print("incoming :");
+                int size;
+                while ((size = client.available()) > 0) {
+                    uint8_t* msg = (uint8_t*)malloc(size);
+                    size = client.read(msg, size);
+                    Serial.write(msg, size);
+                    free(msg);
+                }
+            
+            }
+            break;
+
+        case 2:
+            {}
+            break;
+
+        default:
+            {}
+            break;
+    }
+
 }
 
 void newRange()
@@ -151,6 +198,33 @@ void send_udp(String *msg_json)
     if (client.connected())
     {
         client.print(*msg_json);
-        Serial.println("UDP send");
+        Serial.println("Message sent to UDP host");
+    }
+}
+
+void handleCoordinatesEverySecond() {
+    Coordinates currentCoordinates = getCoordinates(uwb_data); // This is a custom function created to get the 2D coordinates based on the anchors being a specified distance apart
+        
+    if (shouldSendCoordinatesToComputer) {
+        // This is code that is used to make sure that the json is made based on the uwb_data (aka only distances from each anchor), and sent on to the computer
+        make_link_json(uwb_data, &all_json);
+        send_udp(&all_json);
+    }
+
+    if (shouldSendCoordinatesToSerial) {
+        Serial.print("From Current Coordinates: ");
+        Serial.print(currentCoordinates.x);
+        Serial.print(", ");
+        Serial.println(currentCoordinates.y);
+    }
+
+    if (shouldSendCoordinatesToMSP432) {
+        if (!(isnan(currentCoordinates.x) || isnan(currentCoordinates.y))) {
+        // Only transmit to the MSP432 if the data is good
+        SerialPort.print(currentCoordinates.x,4);
+        SerialPort.print(" ");
+        SerialPort.print(currentCoordinates.y,4);
+        SerialPort.print('\r');
+        }
     }
 }
