@@ -2,6 +2,7 @@ import socket
 import time
 import json
 
+UDP_IP = "10.154.45.140"
 
 
 def read_data():
@@ -12,6 +13,10 @@ def read_data():
 
     if line.startswith('Ready'):
         print("Just checked if it was ready and was correctly Ready")
+        isReady = True
+    
+    if line.startswith('In position at'):
+        print("Just checked if the string received was 'In position at' and it was")
         isReady = True
         
     try:
@@ -33,7 +38,6 @@ def read_data():
 
 
 
-UDP_IP = "10.154.51.2"
 print("***Local ip:" + str(UDP_IP) + "***")
 UDP_PORT = 80
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -70,11 +74,17 @@ while True:
     elif state == 2:
         # Send "go to location" back to ESP32
         print("One second has passed")
-        outgoingSock.sendto(bytes("GO TO THE LOCATION NOW", "utf-8"), (addr[0], UDP_PORT))
+        outgoingSock.sendto(bytes("M0.80:1.40", "utf-8"), (addr[0], UDP_PORT))
         print("Just sent message over UDP out that says to go to the location")
         state = 3
         pass
     elif state == 3:
+        _unused, isReady = read_data()
+        if (isReady):
+            print("The robot is now in the correct position!!")
+            state = 4
+        pass
+    elif state == 4:
         pass
 
 
