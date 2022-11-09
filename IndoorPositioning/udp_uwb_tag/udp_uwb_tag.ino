@@ -55,6 +55,8 @@ bool shouldSendCoordinatesToComputer = false;
 // Global variables
 Coordinates currentCoordinates; // The current location of the ESP32. This is updated by calling the get_coordinates function
 int state = 0; // The state of the large state machine
+int timeWhenDWM100Initialized;
+int timeWhenReceivedArrivedFromMSP432;
 
 
 
@@ -118,6 +120,8 @@ void setup()
     // Start the module as a tag
     DW1000Ranging.startAsTag("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_LONGDATA_RANGE_LOWPOWER);
     uwb_data = init_link(); // Create linked lists that are necessary for keeping track of the data from the DWM1000 modules
+
+    timeWhenDWM100Initialized = millis();
 }
 
 
@@ -144,34 +148,48 @@ int len = 0;
 int packetSize = 0;
 Coordinates shapeStartingLocationCoordinates = Coordinates();
 
+
 // State machine states
-#define WAIT_FOR_NON_NULL_READINGS  (0)
-#define READ_TARGET_COORDINATES     (1)
-#define SEND_TARGET_COORD_TO_MSP    (2)
-#define WAIT_FOR_ARRIVED_FROM_MSP   (3)
-#define CHECK_IF_COORDS_ARE_GOOD    (4)
-#define SEND_ARRIVED_TO_COMPUTER    (5)
+#define WAIT_FOR_DWM_TO_BOOTUP      (0)
+#define WAIT_FOR_NON_NULL_READINGS  (1)
+#define READ_TARGET_COORDINATES     (2)
+#define SEND_TARGET_COORD_TO_MSP    (3)
+#define WAIT_FOR_ARRIVED_FROM_MSP   (4)
+#define WAIT_NEW_POS_READ_SETTLE    (5)
+#define CHECK_IF_COORDS_ARE_GOOD    (6)
+#define SEND_ARRIVED_TO_COMPUTER    (7)
 
+
+
+// State machine
 void loopStateMachine() {
-
     switch (state) {
-        case WAIT_FOR_NON_NULL_READINGS: // Wait until reading is not null and then send it to computer
-            firstReadingCoordinates = getCoordinates(uwb_data);
+        // Wait for DWM1000 module to boot up:
+        case WAIT_FOR_DWM_TO_BOOTUP:
+            if (millis() > timeWhenDWM100Initialized + 10000) {
+                state = WAIT_FOR_NON_NULL_READINGS; // After ten seconds, move on to the next state
+            }
+            break;
+
+        // Wait until reading is not null and then send it to computer
+        case WAIT_FOR_NON_NULL_READINGS: 
+            firstReadingCoordinates = getCoordinates(uwb_data); // Read in the current location
+
+            // Check if the coordinates are not zero or NAN
             if (!(isnan(firstReadingCoordinates.x) || isnan(firstReadingCoordinates.y) || firstReadingCoordinates.x == 0 || firstReadingCoordinates.y == 0)) {
-                // Move on to the next state
+                
+                // If the coordinates are good readings, then go ahead and send "Ready: 1.23:4.23" on to the ground control station
                 readyAtStr = "Ready: ";
                 readyAtStr += firstReadingCoordinates.x;
                 readyAtStr += ":";
                 readyAtStr += firstReadingCoordinates.y;
-
-                
-                send_udp(&readyAtStr);
+                send_udp(&readyAtStr); // Send it on to the ground control station
 
                 state = READ_TARGET_COORDINATES; // Move on to next state
             }
-
             break;
 
+        // Read in the target coordinates
         case READ_TARGET_COORDINATES:
             // Read incoming message
             packetSize = Udp.parsePacket();
@@ -184,6 +202,7 @@ void loopStateMachine() {
                 Serial.print(remoteIp);
                 Serial.print(", port ");
                 Serial.println(Udp.remotePort());
+
                 // read the packet into packetBufffer
                 len = Udp.read(packetBuffer, 255);
                 if (len > 0) {
@@ -191,10 +210,11 @@ void loopStateMachine() {
                 }
                 Serial.println("Contents:");
                 Serial.println(packetBuffer);
-                // packetBuffer should be M1.23:4.56 where the first (1.23) is the x coordinate
-                if (packetBuffer[0] == 'M') {
-                    // Convert the 
 
+                // packetBuffer should be of the form "M1.23:4.56" where the first (1.23) is the x coordinate and the second (4.56) is the y coordinates
+                if (packetBuffer[0] == 'M') {
+
+                    // Convert the received string into the coordinates:
                     shapeStartingLocationCoordinates.x = (packetBuffer[1] - 0x30) + ((float)(packetBuffer[3] - 0x30))/10 + ((float)(packetBuffer[4] - 0x30))/100;
                     shapeStartingLocationCoordinates.y = (packetBuffer[6] - 0x30) + ((float)(packetBuffer[8] - 0x30))/10 + ((float)(packetBuffer[9] - 0x30))/100;
 
@@ -208,35 +228,49 @@ void loopStateMachine() {
             }
             break;
 
+        // Send these desired coordinates on to the MSP432
         case SEND_TARGET_COORD_TO_MSP:
             {
                 // Send "Go to shapeStartingLocationCoordinates to the MSP432"
-                SerialPort.print("G");
+                SerialPort.print("G ");
                 SerialPort.print(shapeStartingLocationCoordinates.x,2);
                 SerialPort.print(" ");
                 SerialPort.print(shapeStartingLocationCoordinates.y,2);
                 SerialPort.print('\r');
 
                 Serial.println("Just sent target coordinates to MSP432");
-                shouldSendCoordinatesToMSP432 = true; // Start sending coordinates on to the MSP432
+                shouldSendCoordinatesToMSP432 = true; // Start continually sending "current location" coordinates on to the MSP432, which will continue every second
                 state = WAIT_FOR_ARRIVED_FROM_MSP;
             }
             break;
+
+        // Wait for the message from the MSP432 "A" which means it thinks it has arrived
         case WAIT_FOR_ARRIVED_FROM_MSP:
             {
                 // Wait for "A" from the MSP432
                 if (SerialPort.available() > 0) {
                     if (SerialPort.read() == 'A') {
+                        digitalWrite(RED_LED, LOW);
                         Serial.println("Received 'A' from the MSP432!");
                         shouldSendCoordinatesToMSP432 = false;
-                        state = CHECK_IF_COORDS_ARE_GOOD;
+                        timeWhenReceivedArrivedFromMSP432 = millis();
+                        state = WAIT_NEW_POS_READ_SETTLE;
                     }
                 }
             }
             break;
+        
+        case WAIT_NEW_POS_READ_SETTLE:
+            digitalWrite(GRN_LED, LOW);
+            if (millis() > timeWhenReceivedArrivedFromMSP432 + 5000) {
+                state = CHECK_IF_COORDS_ARE_GOOD; // After five seconds, move on to the next state
+            }
+            break;
+
+        // Check to see if the coordinates are good
         case CHECK_IF_COORDS_ARE_GOOD:
             {
-                // Check if the coordinates are good or not
+                // Check if the coordinates are good or not. This means if their errors are within the margin set in the macros at the top of the file
                 currentCoordinates = getCoordinates(uwb_data);
                 bool xCoordGood = (currentCoordinates.x - shapeStartingLocationCoordinates.x) < MAX_ERROR_FROM_STARTING_COORDINATES && (currentCoordinates.x - shapeStartingLocationCoordinates.x) > -MAX_ERROR_FROM_STARTING_COORDINATES;
                 bool yCoordGood = (currentCoordinates.y - shapeStartingLocationCoordinates.y) < MAX_ERROR_FROM_STARTING_COORDINATES && (currentCoordinates.y - shapeStartingLocationCoordinates.y) > -MAX_ERROR_FROM_STARTING_COORDINATES;
@@ -245,9 +279,11 @@ void loopStateMachine() {
                     // Move on to the next state because the coordinates are good
                     state = SEND_ARRIVED_TO_COMPUTER;
                     Serial.println("Coordinates were good!");
+                    digitalWrite(GRN_LED, HIGH);
                 } else {
                     state = SEND_TARGET_COORD_TO_MSP;
                     Serial.println("Coordinates were bad, so re-sending new coordinates");
+                    digitalWrite(RED_LED, HIGH);
                 }
             }
             break;
@@ -259,18 +295,18 @@ void loopStateMachine() {
                 readyAtStr += ":";
                 readyAtStr += currentCoordinates.y;                
                 send_udp(&readyAtStr);
-                state++;
+                state = 15;
             }
             break;
-        case 6:
+        case 15:
             {
                 Serial.println("ESP32 code is now over");
                 state++;
             }
             break;
-        case 7:
+        case 16:
             {
-
+                // Loop in this state forever since at this point it's done now, even though in actuality this is where I would say "Move in a circle"
             }
             break;
 
