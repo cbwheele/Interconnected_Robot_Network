@@ -23,6 +23,10 @@ const char *ssid = "ncsu";
 const char *password = "";
 const char *host = "10.154.51.2";
 WiFiClient client;
+WiFiUDP Udp;
+
+
+char packetBuffer[255]; //buffer to hold incoming packet
 
 struct MyLink *uwb_data;
 int index_num = 0;
@@ -79,6 +83,7 @@ void setup()
                      "Connection: close\r\n" +
                      "\r\n");
     }
+    Udp.begin(80);
 
     delay(1000);
 
@@ -112,7 +117,8 @@ void loop()
 
 String readyAtStr;
 Coordinates firstReadingCoordinates = Coordinates();
-
+int len = 0;
+int packetSize = 0;
 
 void loopStateMachine() {
 
@@ -136,22 +142,34 @@ void loopStateMachine() {
 
         case 1:
             // Read incoming message
-            if (client.available() > 0) {
-                Serial.print("\n\n");
-                Serial.print("incoming :");
-                int size;
-                while ((size = client.available()) > 0) {
-                    uint8_t* msg = (uint8_t*)malloc(size);
-                    size = client.read(msg, size);
-                    Serial.write(msg, size);
-                    free(msg);
+            packetSize = Udp.parsePacket();
+
+            if (packetSize) {
+                Serial.print("Received packet of size ");
+                Serial.println(packetSize);
+                Serial.print("From ");
+                IPAddress remoteIp = Udp.remoteIP();
+                Serial.print(remoteIp);
+                Serial.print(", port ");
+                Serial.println(Udp.remotePort());
+                // read the packet into packetBufffer
+                len = Udp.read(packetBuffer, 255);
+                if (len > 0) {
+                    packetBuffer[len] = 0;
                 }
-            
+                Serial.println("Contents:");
+                Serial.println(packetBuffer);
+                if (packetBuffer[0] == 'G' && packetBuffer[1] == 'O') {
+                    state++;
+                }
             }
             break;
 
         case 2:
-            {}
+            {
+                Serial.println("About to go on to my starting location!");
+                state++;
+            }
             break;
 
         default:

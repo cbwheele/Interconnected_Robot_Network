@@ -50,7 +50,7 @@ data, addr = sock.accept()
 print("Data", data)
 print("Addr", addr[0])
 
-#outgoingSock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
+outgoingSock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
 
 
 
@@ -70,7 +70,7 @@ while True:
     elif state == 2:
         # Send "go to location" back to ESP32
         print("One second has passed")
-        sock.sendto(bytes("GO TO THE LOCATION NOW", "utf-8"), (addr[0], UDP_PORT))
+        outgoingSock.sendto(bytes("GO TO THE LOCATION NOW", "utf-8"), (addr[0], UDP_PORT))
         print("Just sent message over UDP out that says to go to the location")
         state = 3
         pass
