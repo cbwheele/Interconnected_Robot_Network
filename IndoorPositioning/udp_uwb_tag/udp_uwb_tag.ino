@@ -234,7 +234,7 @@ void loopStateMachine() {
                 // Send "Go to shapeStartingLocationCoordinates to the MSP432"
                 SerialPort.print("G\r");
                 SerialPort.print(shapeStartingLocationCoordinates.x,2);
-                SerialPort.print("\r");
+                SerialPort.print(" ");
                 SerialPort.print(shapeStartingLocationCoordinates.y,2);
                 SerialPort.print('\r');
 
@@ -300,8 +300,8 @@ void loopStateMachine() {
             break;
         case 15:
             {
-                Serial.println("ESP32 code is now over");
-                state++;
+                Serial.println("ESP32 code is now about to loop back to get another set of coordinates");
+                state = WAIT_FOR_NON_NULL_READINGS;
             }
             break;
         case 16:

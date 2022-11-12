@@ -73,12 +73,15 @@ while True:
             timeLeftStateZero = time.time()
             state = 1
     elif state == 1:
-        if time.time() > timeLeftStateZero + 1:
-            state = 2
+        xCoord = input("Input X coordinate: ")
+        yCoord = input("Input Y coordinate: ")
+        state = 2
+        
     elif state == 2:
         # Send "go to location" back to ESP32
-        print("One second has passed")
-        outgoingSock.sendto(bytes("M0.80:1.40", "utf-8"), (addr[0], UDP_PORT))
+        stringToESP32 = "M" + xCoord + ":" + yCoord
+        print("About to send this to ESP32: ", stringToESP32)
+        outgoingSock.sendto(bytes(stringToESP32, "utf-8"), (addr[0], UDP_PORT))
         print("Just sent message over UDP out that says to go to the location")
         state = 3
         pass
@@ -86,7 +89,7 @@ while True:
         _unused, isReady = read_data()
         if (isReady):
             print("The robot is now in the correct position!!")
-            state = 4
+            state = 0 # Start back over at the beginning
         pass
     elif state == 4:
         pass
