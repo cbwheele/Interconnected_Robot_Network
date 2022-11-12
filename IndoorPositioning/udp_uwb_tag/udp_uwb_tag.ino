@@ -34,7 +34,7 @@ HardwareSerial SerialPort(2); // This is the serial port to the MSP432. It is de
 
 
 // IP address of host, which is currently the computer ground control station:
-const char *host = "10.154.45.140";
+const char *host = "10.154.8.112";
 
 
 
@@ -232,9 +232,9 @@ void loopStateMachine() {
         case SEND_TARGET_COORD_TO_MSP:
             {
                 // Send "Go to shapeStartingLocationCoordinates to the MSP432"
-                SerialPort.print("G ");
+                SerialPort.print("G\r");
                 SerialPort.print(shapeStartingLocationCoordinates.x,2);
-                SerialPort.print(" ");
+                SerialPort.print("\r");
                 SerialPort.print(shapeStartingLocationCoordinates.y,2);
                 SerialPort.print('\r');
 

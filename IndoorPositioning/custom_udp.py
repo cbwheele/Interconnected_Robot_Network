@@ -1,10 +1,15 @@
+# You have to run this script as sudo
+
+
 import socket
 import time
 import json
 
-UDP_IP = "10.154.45.140"
+UDP_IP = "10.154.8.112" # You have to manually set your IP address here unfortunately
 
 
+# This function reads in the data over udp and if it starts with the "Read" or "In position at" it returns a special flag isRea
+#     Otherwise, it will parse the json and return the list of the info of the tags it received
 def read_data():
     isReady = False
     line = data.recv(1024).decode('UTF-8')
@@ -37,24 +42,23 @@ def read_data():
     return uwb_list, isReady
 
 
-
-print("***Local ip:" + str(UDP_IP) + "***")
 UDP_PORT = 80
+print("***Local ip:" + str(UDP_IP) + "***")
+
+# Set up the socket that should be /received/ from the ESP32
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-print("After socket")
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 sock.bind((UDP_IP, UDP_PORT))
-
 print("After bind")
 sock.listen(1)  # The number of connections received
 print("About to accept connection")
 data, addr = sock.accept()
 
 
-print("Data", data)
-print("Addr", addr[0])
+print("Data", data) # This is the data object that will receive the input of the UDP port connection just made
+print("Addr", addr[0]) # This is the IP address you connected with
 
-outgoingSock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
+outgoingSock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # This creates an outgoing UDP connection to that IP address so that you can send info back
 
 
 
