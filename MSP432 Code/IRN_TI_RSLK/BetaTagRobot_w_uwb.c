@@ -59,7 +59,7 @@
 #include "./inc/UART1.h"    //serial communication
 
 #define TIME2DIST 3072
-#define TIME2DEG 5.972
+#define TIME2DEG 6          //was 5.972
 #define MOTOR_L_VAL 2000
 #define MOTOR_R_VAL 2100
 
@@ -138,6 +138,7 @@ int main(void)
                 desir_y_cor = strtof(pend, NULL);
                 stage++;
             }
+            num_of_cor = 0;
             break;
         }
         case 1:              //Get first location
