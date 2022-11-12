@@ -137,6 +137,11 @@ int main(void){        // Main State Machine
               RxPutI = 0;
               RxGetI = 0;
               UART1_InString(string,19);         //IMPORTANT: message separate with space " ", end with CR "\r"
+              /*printf( " %s\n", token );
+      token = strtok(NULL, " ");
+      printf( " %s\n", token );
+      token = strtok(NULL, " ");
+      printf( " %s\n", token ); */
               x1 = strtof(string, &pend);
               y1 = strtof(pend, NULL);
               first_x_val[num_of_cor] = x1;

@@ -16,7 +16,7 @@
 #define RED_LED 33
 #define GRN_LED 32
 
-const char *ssid = "ncsu";
+const char *ssid = "Raleigh Convention Center";
 const char *password = "";
 const char *host = "10.154.27.73";
 WiFiClient client;

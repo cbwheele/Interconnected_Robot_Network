@@ -72,14 +72,14 @@ void TimerA3Capture_Init01(void(*task0)(uint16_t time), void(*task1)(uint16_t ti
     P10->SEL0 |= 0x30;      //set SEL0 of P10.4 and P10.5 to 1      ==> SEL = 01
     P10->SEL1 &= ~0x30;     //set SEL1 of P10.4 and P10.5 to 0
     P10->DIR &= ~0x30;      // make P10.4, P10.5 in
-    TIMER_A3->CTL &= ~0x0030;               // halt Timer A0
+    TIMER_A3->CTL &= ~0x0030;               // halt Timer A3
     TIMER_A3->CTL = 0x0200;
     TIMER_A3->CCTL[0] = 0x4910; //bit 0 and bit 4 set by 10.4
     TIMER_A3->CCTL[1] = 0x4910; //bit 0 and bit 4 set by 10.5
     TIMER_A3->EX0 &= ~0x0007;       // configure for input clock divider /1
-    NVIC->IP[2] = (NVIC->IP[2]&0xFFFFFF00)|0x00000040;
-    NVIC->ISER[0] = 0x0000C000;     // set pin 15 and 14
-    TIMER_A3->CTL |= 0x0024;        // reset and start Timer A0 in continuous up mode
+    NVIC->IP[4] = (NVIC->IP[4]&0xFFFFFF00)|0x00000040;
+    NVIC->ISER[0] |= 0x0000C000;     // set pin 15 and 14
+    TIMER_A3->CTL |= 0x0024;        // reset and start Timer A3 in continuous up mode
 }
 
 void TA3_0_IRQHandler(void){

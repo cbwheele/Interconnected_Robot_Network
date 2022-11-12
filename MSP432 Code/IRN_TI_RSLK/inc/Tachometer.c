@@ -51,6 +51,13 @@ policies, either expressed or implied, of the FreeBSD Project.
 #include "msp.h"
 #include "Tachometer.h"
 
+  uint16_t leftSpeed, rightSpeed, leftSpeed_reading, rightSpeed_reading ;
+  enum TachDirection *leftDirection_reading, *rightDirection_reading;
+  //enum TachDirection leftDirection, rightDirection,
+  //int32_t leftStep, rightStep;
+  int32_t *leftStep_reading, *rightStep_reading;
+
+
 uint16_t Tachometer_FirstRightTime, Tachometer_SecondRightTime;
 uint16_t Tachometer_FirstLeftTime, Tachometer_SecondLeftTime;
 int Tachometer_RightSteps = 0;     // incremented with every step forward; decremented with every step backward
@@ -61,6 +68,7 @@ enum TachDirection Tachometer_LeftDir = STOPPED;
 void tachometerRightInt(uint16_t currenttime){
   Tachometer_FirstRightTime = Tachometer_SecondRightTime;
   Tachometer_SecondRightTime = currenttime;
+  rightSpeed_reading =  currenttime - Tachometer_FirstRightTime; //added line to calculate speed
   if((P5->IN&0x01) == 0){
     // Encoder B is low, so this is a step backward
     Tachometer_RightSteps = Tachometer_RightSteps - 1;
@@ -75,6 +83,7 @@ void tachometerRightInt(uint16_t currenttime){
 void tachometerLeftInt(uint16_t currenttime){
   Tachometer_FirstLeftTime = Tachometer_SecondLeftTime;
   Tachometer_SecondLeftTime = currenttime;
+  leftSpeed_reading =  currenttime - Tachometer_FirstLeftTime; //added line to calculate speed
   if((P5->IN&0x04) == 0){
     // Encoder B is low, so this is a step backward
     Tachometer_LeftSteps = Tachometer_LeftSteps - 1;
