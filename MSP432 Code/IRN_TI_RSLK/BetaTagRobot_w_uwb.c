@@ -100,6 +100,10 @@ void Init_Tachometer(void) {
     P10->IES |= 0x30;
     P10->IE  |= 0x30;
     */
+}
+
+void Init_Bumper_Switches(void) {
+
     P4->SEL0 &= ~0xED; // GPIO
     P4->SEL1 &= ~0xED; // GPIO
     P4->DIR  &= ~0xED; // Direction is input
@@ -117,9 +121,16 @@ void Init_Tachometer(void) {
     EnableInterrupts();
 }
 
+volatile unsigned char stage = 0;
+
 void PORT4_IRQHandler(void) {
-      // THis is when the function comes
-    P4->IFG &= ~0xED;
+      // This is the IRQ for Port 4 which contains the bumper switches
+    if (P4->IFG & 0x0ED) {
+        P4->IFG &= ~0xED;
+        // This means that a bumper switch was pressed
+        stage = 100;
+        Motor_Stop();
+    }
 }
 
 
@@ -130,7 +141,7 @@ int main(void)
     char *pend;           // identify the space between numbers
     float x1;
     float y1;
-    unsigned char stage = 0;
+
     volatile unsigned char timer_set = 0; //identify if timer is set or not
 
     char num_of_cor = 0;
@@ -158,12 +169,17 @@ int main(void)
     Motor_Init();
     Tachometer_Init();
 
-    Init_Tachometer();
+    Init_Bumper_Switches();
 
     while (1)
     {
         switch (stage)
         {
+        case 100: {
+            Motor_Stop(); // Stay in this state forever
+            // Turn the LED red to show that it hit something with the bumper switch
+            break;
+        }
         case 0:                 //Receive desired location to go to
         {
             UART1_InString(string, 19); //IMPORTANT: message separate with space " ", end with CR "\r"
