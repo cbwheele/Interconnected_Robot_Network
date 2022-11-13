@@ -90,17 +90,75 @@ void Timer_Done(void)
     timerDone = 1;
 }
 
+
+/*
+// I could not get this to work on regular GPIO interrupts
+// For some reason it appears that Port 10 may not have an interrupt vector?!
+// Link to forum that says that: https://e2e.ti.com/support/microcontrollers/msp-low-power-microcontrollers-group/msp430/f/msp-low-power-microcontroller-forum/501845/msp432-gpio-interrupts
+//
 void Init_Tachometer(void) {
-    /*
     P10->SEL0 &= ~0x30; // 10.4 and 10.5 GPIO
     P10->SEL1 &= ~0x30; // 10.4 and 10.5 GPIO
     P10->DIR  &= ~0x30; // Direction is input
-    P10->OUT |= 0x30;
-    P10->REN |= 0x30;
+    //P10->OUT |= 0x30;
+    //P10->REN |= 0x30;
+    P10->IFG &= ~0x30;
     P10->IES |= 0x30;
     P10->IE  |= 0x30;
-    */
+    //NVIC->IP[4] = (NVIC->IP[4]&0xFFFFFF00)|0x00000040; // priority 2
+    //NVIC->ISER[1] |= 0x00001000; // Enable port 10 interrupts which is 44?
+    NVIC->IP[4] = (NVIC->IP[4]&0xFFFFFF00)|0x00000040; // priority 2
+    NVIC->ISER[0] |= 0x0000C000;     // set pin 15 and 14
+    //MAP_GPIO_setAsInputPinWithPullUpResistor(GPIO_PORT_P10, GPIO_PIN3);
+    //MAP_GPIO_clearInterruptFlag(GPIO_PORT_P10, GPIO_PIN3);
 }
+void PORT10_IRQHandler(void) {
+    if (P10->IFG & 0x10) {
+        // Right?
+    }
+    if (P10->IFG & 0x20) {
+        // Left?
+    }
+}
+*/
+
+uint16_t left_counter = 0;
+uint16_t right_counter = 0;
+
+void TimerA3Capture_Init(){
+    // write this for Lab 16
+    P10->SEL0 |= 0x30;      //set SEL0 of P10.4 and P10.5 to 1      ==> SEL = 01
+    P10->SEL1 &= ~0x30;     //set SEL1 of P10.4 and P10.5 to 0
+    P10->DIR &= ~0x30;      // make P10.4, P10.5 in
+    TIMER_A3->CTL &= ~0x0030;               // halt Timer A3
+    TIMER_A3->CTL = 0x0200;
+    TIMER_A3->CCTL[0] = 0x4910; //bit 0 and bit 4 set by 10.4
+    TIMER_A3->CCTL[1] = 0x4910; //bit 0 and bit 4 set by 10.5
+    TIMER_A3->EX0 &= ~0x0007;       // configure for input clock divider /1
+    NVIC->IP[4] = (NVIC->IP[4]&0xFFFFFF00)|0x00000040; // priority 2
+    NVIC->ISER[0] |= 0x0000C000;     // set pin 15 and 14
+    TIMER_A3->CTL |= 0x0024;        // reset and start Timer A3 in continuous up mode
+}
+
+
+void TA3_0_IRQHandler(void){
+    TIMER_A3->CCTL[0] &= ~0x0001;             // acknowledge capture/compare interrupt 0
+    right_counter++;
+
+}
+
+void TA3_N_IRQHandler(void){
+    TIMER_A3->CCTL[1] &= ~0x0001;             // acknowledge capture/compare interrupt 0
+    left_counter ++;
+}
+
+
+
+
+
+
+
+
 
 void Init_Bumper_Switches(void) {
 
@@ -113,12 +171,11 @@ void Init_Bumper_Switches(void) {
     P4->IES |= 0xED;
     P4->IE  |= 0xED;
     NVIC->IP[8] = (NVIC->IP[8]&0x00FFFFFF)|0x40000000; // priority 2
-    NVIC->ISER[1] |= 0x00000040; // Enable 38 (we're assuming  it's 0x01 because 35 is 0x8 which is 1000
+    NVIC->ISER[1] |= 0x00000040; // Enable 38
     // 35 was ISER[1] = 0x00000008;  // 00000000000001000
     // 40 was ISER[1] = 0x00000100;  // 00000000100000000
     // 38 is  ISER[1] = 0x00000040;  //       00001000000
-
-    EnableInterrupts();
+    // 44 ??  ISER[1] = 0x00001000;  // 00001000000000000
 }
 
 volatile unsigned char stage = 0;
@@ -170,6 +227,7 @@ int main(void)
     Tachometer_Init();
 
     Init_Bumper_Switches();
+    TimerA3Capture_Init();
 
     while (1)
     {

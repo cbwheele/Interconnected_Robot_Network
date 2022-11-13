@@ -53,8 +53,7 @@ void ta3dummy(uint16_t t){};       // dummy function
 void (*CaptureTask0)(uint16_t time) = ta3dummy;// user function
 void (*CaptureTask1)(uint16_t time) = ta3dummy;// user function
 
-uint16_t left_counter = 0;
-uint16_t right_counter = 0;
+
 uint16_t Tachometer_FirstRightTime, Tachometer_SecondRightTime, rightSpeed_reading;
 uint16_t Tachometer_FirstLeftTime, Tachometer_SecondLeftTime;
 
@@ -86,6 +85,8 @@ void TimerA3Capture_Init01(void(*task0)(uint16_t time), void(*task1)(uint16_t ti
     TIMER_A3->CTL |= 0x0024;        // reset and start Timer A3 in continuous up mode
 }
 
+
+/*
 void TA3_0_IRQHandler(void){
     // write this for Lab 16
     TIMER_A3->CCTL[0] &= ~0x0001;             // acknowledge capture/compare interrupt 0
@@ -100,6 +101,8 @@ void TA3_N_IRQHandler(void){
     //(*CaptureTask1)(TIMER_A3->CCR[1]);         // execute user task
     left_counter ++;
 }
+
+*/
 
 // old robot code
 
