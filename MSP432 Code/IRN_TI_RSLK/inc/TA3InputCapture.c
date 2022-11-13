@@ -53,6 +53,10 @@ void ta3dummy(uint16_t t){};       // dummy function
 void (*CaptureTask0)(uint16_t time) = ta3dummy;// user function
 void (*CaptureTask1)(uint16_t time) = ta3dummy;// user function
 
+uint16_t left_counter = 0;
+uint16_t right_counter = 0;
+uint16_t Tachometer_FirstRightTime, Tachometer_SecondRightTime, rightSpeed_reading;
+uint16_t Tachometer_FirstLeftTime, Tachometer_SecondLeftTime;
 
 //------------TimerA3Capture_Init01------------
 // Initialize Timer A3 in edge time mode to request interrupts on
@@ -77,7 +81,7 @@ void TimerA3Capture_Init01(void(*task0)(uint16_t time), void(*task1)(uint16_t ti
     TIMER_A3->CCTL[0] = 0x4910; //bit 0 and bit 4 set by 10.4
     TIMER_A3->CCTL[1] = 0x4910; //bit 0 and bit 4 set by 10.5
     TIMER_A3->EX0 &= ~0x0007;       // configure for input clock divider /1
-    NVIC->IP[4] = (NVIC->IP[4]&0xFFFFFF00)|0x00000040;
+    NVIC->IP[4] = (NVIC->IP[4]&0xFFFFFF00)|0x00000040; // priority 2
     NVIC->ISER[0] |= 0x0000C000;     // set pin 15 and 14
     TIMER_A3->CTL |= 0x0024;        // reset and start Timer A3 in continuous up mode
 }
@@ -85,15 +89,16 @@ void TimerA3Capture_Init01(void(*task0)(uint16_t time), void(*task1)(uint16_t ti
 void TA3_0_IRQHandler(void){
     // write this for Lab 16
     TIMER_A3->CCTL[0] &= ~0x0001;             // acknowledge capture/compare interrupt 0
-    (*CaptureTask0)(TIMER_A3->CCR[0]);         // execute user task
+    //(*CaptureTask0)(TIMER_A3->CCR[0]);         // execute user task
+    right_counter ++;
 
 }
 
 void TA3_N_IRQHandler(void){
     // write this for Lab 16
     TIMER_A3->CCTL[1] &= ~0x0001;             // acknowledge capture/compare interrupt 0
-    (*CaptureTask1)(TIMER_A3->CCR[1]);         // execute user task
-
+    //(*CaptureTask1)(TIMER_A3->CCR[1]);         // execute user task
+    left_counter ++;
 }
 
 // old robot code

@@ -1,9 +1,9 @@
-// GPIOmain.c
+// Lab16_Tachmain.c
 // Runs on MSP432
-// Initialize four GPIO pins as outputs.  Continually generate output to
-// drive simulated stepper motor.
+// Test the operation of the tachometer by implementing
+// a simple DC motor speed controller.
 // Daniel Valvano
-// September 23, 2017
+// July 11, 2019
 
 /* This example accompanies the book
    "Embedded Systems: Introduction to Robotics,
@@ -39,72 +39,54 @@ those of the authors and should not be interpreted as representing official
 policies, either expressed or implied, of the FreeBSD Project.
 */
 
-// P4.3 is an output to LED3, negative logic
-// P4.2 is an output to LED2, negative logic
-// P4.1 is an output to LED1, negative logic
-// P4.0 is an output to LED0, negative logic
+// See Bump.c for bumper connections (Port 8 or Port 4)
+
+// Debug heartbeat connected to P2.0 (built-in red LED)
+// Debug heartbeat connected to P2.4
+
+// Pololu kit v1.1 connections:
+// Left Encoder A connected to P10.5 (J5)
+// Left Encoder B connected to P5.2 (J2.12)
+// Right Encoder A connected to P10.4 (J5)
+// Right Encoder B connected to P5.0 (J2.13)
+
+// Left motor direction connected to P5.4 (J3.29)
+// Left motor PWM connected to P2.7/TA0CCP4 (J4.40)
+// Left motor enable connected to P3.7 (J4.31)
+// Right motor direction connected to P5.5 (J3.30)
+// Right motor PWM connected to P2.6/TA0CCP3 (J4.39)
+// Right motor enable connected to P3.6 (J2.11)
+
+// Negative logic bump sensors defined in Bump.c (use Port 4)
+// P4.7 Bump5, left side of robot
+// P4.6 Bump4
+// P4.5 Bump3
+// P4.3 Bump2
+// P4.2 Bump1
+// P4.0 Bump0, right side of robot
+
+// Debug heartbeat connected to P2.0 (built-in red LED)
+// Debug heartbeat connected to P1.0 (built-in LED1)
 
 #include <stdint.h>
-#include <stdlib.h> //added for reading in coordinates
-#include <stdio.h>  //added for reading in coordinates
-#include <math.h>   //added for reading in coordinates
 #include "msp.h"
 #include "Clock.h"
-#include "ports.h"
-#include "./inc/TExaS.h"
-#include "./inc/Motor.h"
-#include "./inc/PWM.h"
-#include "./inc/TimerA2.h"
-#include "./inc/Tachometer.h"
-
-#include "./inc/UART1.h"    //serial communication
-extern uint16_t left_counter ;
-extern uint16_t right_counter ;
-uint16_t R_ADJ_VAL = 100;
-uint16_t L_ADJ_VAL = 100;
-
-  uint16_t leftSpeed, rightSpeed, leftSpeed_reading, rightSpeed_reading ;
-  enum TachDirection *leftDirection_reading, *rightDirection_reading;
-  //enum TachDirection leftDirection, rightDirection,
-  //int32_t leftStep, rightStep;
-  int32_t *leftStep_reading, *rightStep_reading;
-
-volatile unsigned char timerDone = 0;
- uint32_t RxPutI;      // should be 0 to SIZE-1
- uint32_t RxGetI;      // should be 0 to SIZE-1
-float distance_to_travel = 0;
-float x_leg_of_tri = 0;
-
-void EnableInterrupts(void);
-void DisableInterrupts(void);
-void WaitForInterrupt(void);
-void TimerA3Capture_Init01(void(*task0)(uint16_t time), void(*task1)(uint16_t time));
-
-void GPIO_Init(void){
-  // initialize P4.3-P4.0 and make them outputs
-  P4->SEL0 &= ~0x0F;
-  P4->SEL1 &= ~0x0F;            // configure stepper motor/LED pins as GPIO
-  P4->DIR |= 0x0F;              // make stepper motor/LED pins out
-}
-
-void TA1_0_IRQHandler(void){
-TIMER_A1->CCTL[0] &= ~0x0001; // ack
-// body
-P2->OUT ^= 2;
-}
 
 
-void Timer_Done(void) {
-    TIMER_A2->CTL &= ~0x0030;       // halt Timer A2
-    timerDone = 1;
-}
-////////////////////////////////////////////////////////////////////
+#include "../inc/Motor.h"
+
+#include "../inc/Tachometer.h"
+#include "../inc/TA3InputCapture.h"
+
+uint32_t RxPutI;      // should be 0 to SIZE-1
+uint32_t RxGetI;      // should be 0 to SIZE-1
 #define P2_4 (*((volatile uint8_t *)(0x42098070)))
 #define P2_3 (*((volatile uint8_t *)(0x4209806C)))
 #define P2_2 (*((volatile uint8_t *)(0x42098068)))
 #define P2_1 (*((volatile uint8_t *)(0x42098064)))
 #define P2_0 (*((volatile uint8_t *)(0x42098060)))
 #define P1_0 (*((volatile uint8_t *)(0x42098040)))
+
 
 uint16_t Period0;              // (1/SMCLK) units = 83.3 ns units
 uint16_t First0;               // Timer A3 first edge, P10.4
@@ -128,72 +110,64 @@ void PeriodMeasure1(uint16_t time){
   First1 = time;               // setup for next
   Done1 = 1;
 }
-/////////////////////////////////////////////////////////////////////////
-
-int main(void){        // Main State Machine
-
-  volatile unsigned char timer_set = 0; //identify if timer is set or not
-
-
-
-
-
-  DisableInterrupts(); //==============================added to test interrupt
-  Clock_Init48MHz();  // makes SMCLK=12 MHz
-  //UART1_Initprintf(); // initialize UART and printf
+int main(void){ //Program16_1(void){
+  DisableInterrupts();
+  Clock_Init48MHz();   // 48 MHz clock; 12 MHz Timer A clock
   P1->SEL0 &= ~0x01;
   P1->SEL1 &= ~0x01;   // configure P1.0 as GPIO
   P1->DIR |= 0x01;     // P1.0 output
   P2->SEL0 &= ~0x01;
   P2->SEL1 &= ~0x01;   // configure P2.0 as GPIO
   P2->DIR |= 0x01;     // P2.0 output
-  int counter = 0;
-  leftSpeed = 1500;
-  rightSpeed = 1500;
   First0 = First1 = 0; // first will be wrong
   Done0 = Done1 = 0;   // set on subsequent
   PWM_Init34(15000, 0, 0);
-  Motor_Init();
-  Tachometer_Init();
-  Motor_Forward(1500, 1500); // 10%
+  Motor_Init();        // activate Lab 12 software
+  TimerA3Capture_Init01(&PeriodMeasure0, &PeriodMeasure1);
+  Motor_Forward(1500, 1500); // 50%
   EnableInterrupts();
-  char revolve_on = 0;
-
   while(1){
-      WaitForInterrupt();
-      //Tachometer_Get(leftSpeed_reading, leftDirection_reading, leftStep_reading,
-      //               rightSpeed_reading, rightDirection_reading, rightStep_reading);
-      if (right_counter == R_ADJ_VAL){
-                rightSpeed = 0;
-                //if (left_counter < L_ADJ_VAL)
-                L_ADJ_VAL ++;
-                right_counter++;
-
-      }
-      if (left_counter == L_ADJ_VAL){
-                leftSpeed = 0;
-                //if (right_counter < R_ADJ_VAL)
-                R_ADJ_VAL ++;
-                left_counter++;
-            }
-      if (right_counter >= R_ADJ_VAL && left_counter >= L_ADJ_VAL) {
-          left_counter = 0;
-          right_counter = 0;
-          rightSpeed = 1500;
-          leftSpeed = 1500;
-      }
-      counter++;
-      if(counter >= 2000){
-          int checkpoint;
-          checkpoint = 0;
-      }
-      if(counter >= 10000){
-          Motor_Stop();
-      }
-      else{
-      Motor_Forward(leftSpeed, rightSpeed);
-      }
+    WaitForInterrupt();
   }
 }
+uint16_t SpeedBuffer[500];      // RPM
+uint32_t PeriodBuffer[500];     // 1/12MHz = 0.083 usec
+uint32_t Duty,DutyBuffer[500];  // 0 to 15000
+uint32_t Time; // in 0.01 sec
+/*void Collect(void){
+  P2_1 = P2_1^0x01;    // thread profile, P2.1
+  if(Done0==0) Period0 = 65534; // stopped
+  if(Done1==0) Period1 = 65534; // stopped
+  Done0 = Done1 = 0;   // set on subsequent
+  if(Time==100){       // 1 sec
+    Duty = 7500;
+    Motor_Forward(7500, 7500);  // 50%
+  }
+  if(Time==200){       // 2 sec
+    Duty = 11250;
+    Motor_Forward(11250, 11250);// 75%
+  }
+  if(Time==300){       // 3 sec
+    Duty = 7500;
+    Motor_Forward(7500, 7500);  // 50%
+  }
+  if(Time==400){       // 4 sec
+    Duty = 3750;
+    Motor_Forward(3750, 3750);  // 25%
+  }
+  if(Time<500){        // 5 sec
+    SpeedBuffer[Time] = 2000000/Period0;
+    PeriodBuffer[Time] = Period0;
+    DutyBuffer[Time] = Duty;
+    Time = Time + 1;
+  }
+  if((Time==500)||Bump_Read()){
+    Duty = 0;
+    Motor_Stop();      // 0%
+    TimerA1_Stop();
+  }
+}*/
+
+
 
 
