@@ -90,6 +90,40 @@ void Timer_Done(void)
     timerDone = 1;
 }
 
+void Init_Tachometer(void) {
+    /*
+    P10->SEL0 &= ~0x30; // 10.4 and 10.5 GPIO
+    P10->SEL1 &= ~0x30; // 10.4 and 10.5 GPIO
+    P10->DIR  &= ~0x30; // Direction is input
+    P10->OUT |= 0x30;
+    P10->REN |= 0x30;
+    P10->IES |= 0x30;
+    P10->IE  |= 0x30;
+    */
+    P4->SEL0 &= ~0xED; // GPIO
+    P4->SEL1 &= ~0xED; // GPIO
+    P4->DIR  &= ~0xED; // Direction is input
+    P4->OUT |= 0xED;
+    P4->REN |= 0xED;
+    P4->IFG &= ~0xED;
+    P4->IES |= 0xED;
+    P4->IE  |= 0xED;
+    NVIC->IP[8] = (NVIC->IP[8]&0x00FFFFFF)|0x40000000; // priority 2
+    NVIC->ISER[1] |= 0x00000040; // Enable 38 (we're assuming  it's 0x01 because 35 is 0x8 which is 1000
+    // 35 was ISER[1] = 0x00000008;  // 00000000000001000
+    // 40 was ISER[1] = 0x00000100;  // 00000000100000000
+    // 38 is  ISER[1] = 0x00000040;  //       00001000000
+
+    EnableInterrupts();
+}
+
+void PORT4_IRQHandler(void) {
+      // THis is when the function comes
+    P4->IFG &= ~0xED;
+}
+
+
+
 int main(void)
 {        // Main State Machine
     char string[20];
@@ -123,6 +157,8 @@ int main(void)
     PWM_Init34(15000, 0, 0);
     Motor_Init();
     Tachometer_Init();
+
+    Init_Tachometer();
 
     while (1)
     {
