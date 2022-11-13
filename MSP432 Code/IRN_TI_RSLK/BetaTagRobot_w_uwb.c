@@ -63,6 +63,8 @@
 #define MOTOR_L_VAL 2000
 #define MOTOR_R_VAL 2100
 
+#define NINETY_TURN_ENCODERS 180
+
 volatile unsigned char timerDone = 0;
 uint32_t RxPutI;      // should be 0 to SIZE-1
 uint32_t RxGetI;      // should be 0 to SIZE-1
@@ -122,8 +124,8 @@ void PORT10_IRQHandler(void) {
 }
 */
 
-uint16_t left_counter = 0;
-uint16_t right_counter = 0;
+volatile uint16_t left_counter = 0;
+volatile uint16_t right_counter = 0;
 
 void TimerA3Capture_Init(){
     // write this for Lab 16
@@ -220,6 +222,11 @@ int main(void)
     char facing_N = 0;
     char facing_E = 0;
 
+    int currentRightSpeed = 0;
+    int currentLeftSpeed = 0;
+    int rightEncoderCutoffVal = 100;
+    int leftEncoderCutoffVal = 100;
+
     Clock_Init48MHz();  // makes SMCLK=12 MHz
     UART1_Initprintf(); // initialize UART and printf
     PWM_Init34(15000, 0, 0);
@@ -284,6 +291,10 @@ int main(void)
             // Now, initial_x_cor and initial_y_cor have the initial coordinate.
 
             stage++;                        //Go ahead and move forward
+            currentRightSpeed = 2000;
+            currentLeftSpeed = 2000;
+            right_counter = 0;
+            left_counter = 0;
             break;
         }
 
@@ -296,7 +307,32 @@ int main(void)
                 timerDone = 0;
 
             }
-            Motor_Forward(MOTOR_L_VAL, MOTOR_R_VAL); //Left Right ratio 2100:2000, now use tachometer to measure =========================== Editing
+
+
+            // Code for going straight
+            if (right_counter == rightEncoderCutoffVal) {
+                currentRightSpeed = 0;
+                leftEncoderCutoffVal++;
+                right_counter++;
+
+            }
+            if (left_counter == leftEncoderCutoffVal) {
+                currentLeftSpeed = 0;
+                rightEncoderCutoffVal++;
+                left_counter++;
+            }
+            if (right_counter >= rightEncoderCutoffVal && left_counter >= leftEncoderCutoffVal)
+            {
+                left_counter = 0;
+                right_counter = 0;
+                currentRightSpeed = 2000;
+                currentLeftSpeed = 2000;
+            }
+            // End of code to go straight
+
+
+
+            Motor_Forward(currentLeftSpeed, currentRightSpeed); //Left Right ratio 2100:2000, now use tachometer to measure =========================== Editing
 
             if (timerDone)
             {
@@ -481,22 +517,35 @@ int main(void)
         }
         case 12: //FaceEast:
         {
-            if (!timer_set)
-            {
-                TimerA2_Init(&Timer_Done, 90*TIME2DEG); // Turn for 900 to turn 90 degrees
+            if (!timer_set) {
                 timer_set = 1;
-                timerDone = 0;
+                right_counter = 0;
+                left_counter = 0;
+                currentRightSpeed = 2000;
+                currentLeftSpeed = 2000;
             }
-            Motor_Right(MOTOR_L_VAL, MOTOR_R_VAL);
-            if (timerDone)
+
+            // Code for going straight
+            if (right_counter == NINETY_TURN_ENCODERS)
+            {
+                currentRightSpeed = 0;
+            }
+            if (left_counter == NINETY_TURN_ENCODERS)
+            {
+                currentLeftSpeed = 0;
+            }
+
+            Motor_Right(currentLeftSpeed, currentRightSpeed);
+
+            if (right_counter >= NINETY_TURN_ENCODERS && left_counter >= NINETY_TURN_ENCODERS)
             {
                 timer_set = 0;
-                Motor_Stop();
-                facing_N = 0;
-                facing_E = 1;
-                //stage = Decision;
+                left_counter = 0;
+                right_counter = 0;
                 stage++;
+                Motor_Stop();
             }
+            // End of code to go straight
             break;
         }
 
