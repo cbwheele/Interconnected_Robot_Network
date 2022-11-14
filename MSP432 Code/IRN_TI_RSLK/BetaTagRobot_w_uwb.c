@@ -647,67 +647,88 @@ int main(void)
             break;
         }
 
-        case 14: //x_Decision:
+        case 14: // X decision now updated for encoder values
         {
-            if (current_x_cor - desir_x_cor > 0.1)     // need to move backwards
-                //stage = MoveBackward;
-                stage = stage + 2;
+            if (current_x_cor - desir_x_cor > 0.1) {    // need to move backwards
+               movingForward = 0;
+               howManyToMoveStraight = (current_x_cor - desir_x_cor)*UNIT_PER_ROTATION;
+            }
             else if (desir_x_cor - current_x_cor > 0.1)
             {
-                //stage = MoveForward;
-                stage = stage++;
+                // Need to move forwards
+                movingForward = 1;
+                howManyToMoveStraight = (desir_x_cor - current_x_cor)*UNIT_PER_ROTATION;
             }
             else
             {
-                stage = stage + 3;
-            }
-            break;
-        }
-
-        case 15: // MoveForward:   // Move in x direction (Move forward)
-        {
-            distance_to_travel = desir_x_cor - current_x_cor;
-
-            if (!timer_set)
-            {
-                TimerA2_Init(&Timer_Done, distance_to_travel * TIME2DIST); //wait for 30s to start up
-                timer_set = 1;
-                timerDone = 0;
-            }
-            Motor_Forward(MOTOR_L_VAL, MOTOR_R_VAL);
-            if (timerDone)
-            {
-                timer_set = 0;
-                Motor_Stop();
-                /*if(facing_N)
-                 stage = FaceEast;
-                 else
-                 stage = FaceNorth;*/
-                stage = stage + 2;
-            }
-            break;
-        }
-        case 16: // MoveBackward:  in y direction backward
-        {
-            distance_to_travel = current_x_cor - desir_x_cor;
-            if (!timer_set)
-            {
-                TimerA2_Init(&Timer_Done, distance_to_travel * TIME2DIST); //wait for 30s to start up
-                timer_set = 1;
-                timerDone = 0;
-            }
-            Motor_Backward(MOTOR_L_VAL, MOTOR_R_VAL);
-            if (timerDone)
-            {
-                timer_set = 0;
-                Motor_Stop();
                 stage++;
             }
+            stage++;
+            timer_set = 0;
             break;
         }
 
-        case 17: //SendA:            // Where receives commands from esp32
+        case 15: // Move along x axis
         {
+
+            if (!timer_set)
+            {
+                timer_set = 1;
+
+                // Initialize
+                currentRightSpeed = MOVING_SPEED;
+                currentLeftSpeed = MOVING_SPEED;
+                right_counter = 0;
+                left_counter = 0;
+                movingForwardCounter = 0; // How many 1/4 turns it has gone forward.
+            }
+
+            // Code for going straight
+            if (right_counter == rightEncoderCutoffVal)
+            {
+                currentRightSpeed = 0;
+                leftEncoderCutoffVal++;
+                right_counter++;
+            }
+            if (left_counter == leftEncoderCutoffVal)
+            {
+                currentLeftSpeed = 0;
+                rightEncoderCutoffVal++;
+                left_counter++;
+            }
+            if (right_counter >= rightEncoderCutoffVal
+                    && left_counter >= leftEncoderCutoffVal)
+            {
+                left_counter = 0;
+                right_counter = 0;
+                currentRightSpeed = MOVING_SPEED;
+                currentLeftSpeed = MOVING_SPEED;
+
+                if (movingForwardCounter++ >= howManyToMoveStraight)
+                {
+                    stage++;
+                    timer_set = 0;
+                    Motor_Stop();
+                }
+            }
+            // End of code to go straight
+
+            if (movingForward)
+            {
+                Motor_Forward(currentLeftSpeed, currentRightSpeed);
+            }
+            else
+            {
+                Motor_Backward(currentLeftSpeed, currentRightSpeed);
+            }
+
+            break;
+        }
+
+
+        case 16: //SendA:            // Where receives commands from esp32
+        {
+            Motor_Stop();
             UART1_OutChar('A');
             stage = 0;
             break;
