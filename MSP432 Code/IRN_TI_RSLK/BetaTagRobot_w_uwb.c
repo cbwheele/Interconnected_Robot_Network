@@ -64,6 +64,7 @@
 #define MOTOR_R_VAL 2100
 
 #define NINETY_TURN_ENCODERS 180
+#define ONE_DEGREE_ENCODERS 2
 
 volatile unsigned char timerDone = 0;
 uint32_t RxPutI;      // should be 0 to SIZE-1
@@ -193,6 +194,8 @@ void PORT4_IRQHandler(void) {
 }
 
 
+#define MOVING_SPEED 2000
+
 
 int main(void)
 {        // Main State Machine
@@ -226,6 +229,9 @@ int main(void)
     int currentLeftSpeed = 0;
     int rightEncoderCutoffVal = 100;
     int leftEncoderCutoffVal = 100;
+
+    int movingForwardCounter = 0;
+    int turnToNorthEncoderCount = 0;
 
     Clock_Init48MHz();  // makes SMCLK=12 MHz
     UART1_Initprintf(); // initialize UART and printf
@@ -291,22 +297,17 @@ int main(void)
             // Now, initial_x_cor and initial_y_cor have the initial coordinate.
 
             stage++;                        //Go ahead and move forward
-            currentRightSpeed = 2000;
-            currentLeftSpeed = 2000;
+            currentRightSpeed = MOVING_SPEED;
+            currentLeftSpeed = MOVING_SPEED;
             right_counter = 0;
             left_counter = 0;
+            movingForwardCounter = 0; // How many 1/4 turns it has gone forward.
             break;
         }
 
         case 3:               // Move forward
         {
-            if (!timer_set)
-            {
-                TimerA2_Init(&Timer_Done, 512 * 8);  //move 8s
-                timer_set = 1;
-                timerDone = 0;
 
-            }
 
 
             // Code for going straight
@@ -325,8 +326,14 @@ int main(void)
             {
                 left_counter = 0;
                 right_counter = 0;
-                currentRightSpeed = 2000;
-                currentLeftSpeed = 2000;
+                currentRightSpeed = MOVING_SPEED;
+                currentLeftSpeed = MOVING_SPEED;
+
+                if (movingForwardCounter++ > 6) {
+                    stage++;
+                    timer_set = 0;
+                    Motor_Stop();
+                }
             }
             // End of code to go straight
 
@@ -334,12 +341,6 @@ int main(void)
 
             Motor_Forward(currentLeftSpeed, currentRightSpeed); //Left Right ratio 2100:2000, now use tachometer to measure =========================== Editing
 
-            if (timerDone)
-            {
-                stage++;                        //get data again
-                timer_set = 0;
-                Motor_Stop();
-            }
             break;
         }
         case 4:               // Wait for getting location
@@ -440,6 +441,8 @@ int main(void)
         }
         case 8:   //Turn to north
         {
+
+            /*
             if (!timer_set)
             {
                 TimerA2_Init(&Timer_Done, TIME2DEG* north_angle_atan); //wait for 30s to start up
@@ -455,9 +458,62 @@ int main(void)
                 //stage = y_Decision;
                 stage++;
             }
+            */
+
+            if (!timer_set)
+            {
+                timer_set = 1;
+                right_counter = 0;
+                left_counter = 0;
+                currentRightSpeed = 2000;
+                currentLeftSpeed = 2000;
+
+                turnToNorthEncoderCount = north_angle_atan*ONE_DEGREE_ENCODERS;
+            }
+
+            // Code to turn by the specific number of degrees
+            if (right_counter == turnToNorthEncoderCount)
+            {
+                currentRightSpeed = 0;
+            }
+            if (left_counter == turnToNorthEncoderCount)
+            {
+                currentLeftSpeed = 0;
+            }
+
+            Motor_Left(currentLeftSpeed, currentRightSpeed);
+
+            if (right_counter >= turnToNorthEncoderCount && left_counter >= turnToNorthEncoderCount)
+            {
+                Motor_Stop();
+                stage++;
+                timer_set = 0;
+                left_counter = 0;
+                right_counter = 0;
+            }
+            // Code to turn by the specific number of degrees
+
+
             break;
         }
-        case 9: //y_Decision:
+        case 9: // Delay for one second
+        {
+            if (!timer_set)
+            {
+                TimerA2_Init(&Timer_Done, 512); //wait for 30s to start up
+                timer_set = 1;
+                timerDone = 0;
+            }
+            if (timerDone)
+            {
+                timer_set = 0;
+                stage++;
+            }
+            break;
+        }
+
+
+        case 10: //y_Decision:
         {
             if (current_y_cor - desir_y_cor > 0.1) // need to move upward | 0.2 threshold on y cor
                 //stage = MoveForward;                           // keep moving forward
@@ -475,7 +531,7 @@ int main(void)
             break;
         }
 
-        case 10:      // MoveForward:  Move in y direction (Move forward)
+        case 11:      // MoveForward:  Move in y direction (Move forward)
         {
             distance_to_travel = current_y_cor - desir_y_cor;
             if (!timer_set)
@@ -497,7 +553,7 @@ int main(void)
             }
             break;
         }
-        case 11:          // MoveBackward in y direction backward
+        case 12:          // MoveBackward in y direction backward
         {
             distance_to_travel = desir_y_cor - current_y_cor;
             if (!timer_set)
@@ -515,7 +571,7 @@ int main(void)
             }
             break;
         }
-        case 12: //FaceEast:
+        case 13: //FaceEast:
         {
             if (!timer_set) {
                 timer_set = 1;
@@ -525,7 +581,7 @@ int main(void)
                 currentLeftSpeed = 2000;
             }
 
-            // Code for going straight
+            // Code to turn ninety degrees
             if (right_counter == NINETY_TURN_ENCODERS)
             {
                 currentRightSpeed = 0;
@@ -545,11 +601,11 @@ int main(void)
                 stage++;
                 Motor_Stop();
             }
-            // End of code to go straight
+            // End of code to turn ninety degrees
             break;
         }
 
-        case 13: //x_Decision:
+        case 14: //x_Decision:
         {
             if (current_x_cor - desir_x_cor > 0.1)     // need to move backwards
                 //stage = MoveBackward;
@@ -566,7 +622,7 @@ int main(void)
             break;
         }
 
-        case 14: // MoveForward:   // Move in x direction (Move forward)
+        case 15: // MoveForward:   // Move in x direction (Move forward)
         {
             distance_to_travel = desir_x_cor - current_x_cor;
 
@@ -589,7 +645,7 @@ int main(void)
             }
             break;
         }
-        case 15: // MoveBackward:  in y direction backward
+        case 16: // MoveBackward:  in y direction backward
         {
             distance_to_travel = current_x_cor - desir_x_cor;
             if (!timer_set)
@@ -608,7 +664,7 @@ int main(void)
             break;
         }
 
-        case 16: //SendA:            // Where receives commands from esp32
+        case 17: //SendA:            // Where receives commands from esp32
         {
             UART1_OutChar('A');
             stage = 0;
