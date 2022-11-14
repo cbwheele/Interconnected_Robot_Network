@@ -262,6 +262,7 @@ int main(void)
         }
         case 0:                 //Receive desired location to go to
         {
+            Motor_Stop();
             UART1_InString(string, 19); //IMPORTANT: message separate with space " ", end with CR "\r"
             if (string[0] == 'G')
             {
@@ -310,6 +311,8 @@ int main(void)
             currentLeftSpeed = MOVING_SPEED;
             right_counter = 0;
             left_counter = 0;
+            rightEncoderCutoffVal = 100;
+            leftEncoderCutoffVal = 100;
             movingForwardCounter = 0; // How many 1/4 turns it has gone forward.
             break;
         }
@@ -451,24 +454,6 @@ int main(void)
         case 8:   //Turn to north
         {
 
-            /*
-            if (!timer_set)
-            {
-                TimerA2_Init(&Timer_Done, TIME2DEG* north_angle_atan); //wait for 30s to start up
-                timer_set = 1;
-                timerDone = 0;
-            }
-            Motor_Left(MOTOR_L_VAL, MOTOR_R_VAL);
-            if (timerDone)
-            {
-                timer_set = 0;
-                Motor_Stop();
-                //facing_N = 1;
-                //stage = y_Decision;
-                stage++;
-            }
-            */
-
             if (!timer_set)
             {
                 timer_set = 1;
@@ -492,7 +477,7 @@ int main(void)
 
             Motor_Left(currentLeftSpeed, currentRightSpeed);
 
-            if (right_counter >= turnToNorthEncoderCount && left_counter >= turnToNorthEncoderCount)
+            if (right_counter >= turnToNorthEncoderCount || left_counter >= turnToNorthEncoderCount)
             {
                 Motor_Stop();
                 stage++;
@@ -557,6 +542,8 @@ int main(void)
                 currentLeftSpeed = MOVING_SPEED;
                 right_counter = 0;
                 left_counter = 0;
+                rightEncoderCutoffVal = 100;
+                leftEncoderCutoffVal = 100;
                 movingForwardCounter = 0; // How many 1/4 turns it has gone forward.
             }
 
@@ -680,6 +667,8 @@ int main(void)
                 currentLeftSpeed = MOVING_SPEED;
                 right_counter = 0;
                 left_counter = 0;
+                rightEncoderCutoffVal = 100;
+                leftEncoderCutoffVal = 100;
                 movingForwardCounter = 0; // How many 1/4 turns it has gone forward.
             }
 
