@@ -195,6 +195,7 @@ void PORT4_IRQHandler(void) {
 
 
 #define MOVING_SPEED 2000
+#define UNIT_PER_ROTATION 9.45
 
 
 int main(void)
@@ -233,6 +234,9 @@ int main(void)
     int movingForwardCounter = 0;
     int turnToNorthEncoderCount = 0;
 
+    char movingForward = 0;
+    int howManyToMoveStraight = 0;
+
     Clock_Init48MHz();  // makes SMCLK=12 MHz
     UART1_Initprintf(); // initialize UART and printf
     PWM_Init34(15000, 0, 0);
@@ -241,6 +245,11 @@ int main(void)
 
     Init_Bumper_Switches();
     TimerA3Capture_Init();
+
+
+    /// JUST FOR TESTING DELETE THIS!!!!!!!
+    //stage = 13;
+    //howManyToMoveStraight = 30;
 
     while (1)
     {
@@ -339,7 +348,7 @@ int main(void)
 
 
 
-            Motor_Forward(currentLeftSpeed, currentRightSpeed); //Left Right ratio 2100:2000, now use tachometer to measure =========================== Editing
+            Motor_Forward(currentLeftSpeed, currentRightSpeed);
 
             break;
         }
@@ -513,60 +522,93 @@ int main(void)
         }
 
 
-        case 10: //y_Decision:
+        case 10: // y_Decision:
         {
-            if (current_y_cor - desir_y_cor > 0.1) // need to move upward | 0.2 threshold on y cor
-                //stage = MoveForward;                           // keep moving forward
-                stage++;
+            if (current_y_cor - desir_y_cor > 0.1)
+            {
+              //stage = MoveForward;                           // keep moving forward
+                howManyToMoveStraight = (current_y_cor - desir_y_cor)*UNIT_PER_ROTATION;
+                movingForward = 1;
+            }
             else if (desir_y_cor - current_y_cor > 0.1)
             {
                 //stage = MoveBackward;
-                stage = stage + 2;
+                movingForward = 0;
+                howManyToMoveStraight = (desir_y_cor - current_y_cor)*UNIT_PER_ROTATION;
             }
             else
             {
-                stage = 12;
+                stage++; // This basically means it will skip the "Move in Y axis" state
+            }
+
+            stage++;
+            timer_set = 0;
+
+            break;
+        }
+
+        case 11: // Move in Y axis
+        {
+            if (!timer_set) {
+                timer_set = 1;
+
+                // Initialize
+                currentRightSpeed = MOVING_SPEED;
+                currentLeftSpeed = MOVING_SPEED;
+                right_counter = 0;
+                left_counter = 0;
+                movingForwardCounter = 0; // How many 1/4 turns it has gone forward.
+            }
+
+            // Code for going straight
+            if (right_counter == rightEncoderCutoffVal)
+            {
+                currentRightSpeed = 0;
+                leftEncoderCutoffVal++;
+                right_counter++;
+            }
+            if (left_counter == leftEncoderCutoffVal)
+            {
+                currentLeftSpeed = 0;
+                rightEncoderCutoffVal++;
+                left_counter++;
+            }
+            if (right_counter >= rightEncoderCutoffVal && left_counter >= leftEncoderCutoffVal)
+            {
+                left_counter = 0;
+                right_counter = 0;
+                currentRightSpeed = MOVING_SPEED;
+                currentLeftSpeed = MOVING_SPEED;
+
+                if (movingForwardCounter++ >= howManyToMoveStraight)
+                {
+                    stage++;
+                    timer_set = 0;
+                    Motor_Stop();
+                }
+            }
+            // End of code to go straight
+
+            if (movingForward) {
+                Motor_Forward(currentLeftSpeed, currentRightSpeed);
+            } else {
+                Motor_Backward(currentLeftSpeed, currentRightSpeed);
             }
 
             break;
         }
 
-        case 11:      // MoveForward:  Move in y direction (Move forward)
+        case 12: // Delay for one second
         {
-            distance_to_travel = current_y_cor - desir_y_cor;
             if (!timer_set)
             {
-                TimerA2_Init(&Timer_Done, distance_to_travel * TIME2DIST);
+                TimerA2_Init(&Timer_Done, 512); //wait for 30s to start up
                 timer_set = 1;
                 timerDone = 0;
             }
-            Motor_Forward(MOTOR_L_VAL, MOTOR_R_VAL);
             if (timerDone)
             {
                 timer_set = 0;
-                Motor_Stop();
-                /*if(facing_N)
-                 stage = FaceEast;
-                 else
-                 stage = FaceNorth;*/
-                stage = stage + 2;
-            }
-            break;
-        }
-        case 12:          // MoveBackward in y direction backward
-        {
-            distance_to_travel = desir_y_cor - current_y_cor;
-            if (!timer_set)
-            {
-                TimerA2_Init(&Timer_Done, distance_to_travel * TIME2DIST); //wait for 30s to start up
-                timer_set = 1;
-                timerDone = 0;
-            }
-            Motor_Backward(MOTOR_L_VAL, MOTOR_R_VAL);
-            if (timerDone)
-            {
-                timer_set = 0;
-                Motor_Stop();
                 stage++;
             }
             break;
