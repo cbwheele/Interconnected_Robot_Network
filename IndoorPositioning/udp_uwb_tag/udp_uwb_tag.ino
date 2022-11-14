@@ -143,6 +143,7 @@ void loop()
 
 
 String readyAtStr;
+String thinksAtLocation = "MSP432 thinks it has arrived at the location";
 Coordinates firstReadingCoordinates = Coordinates();
 int len = 0;
 int packetSize = 0;
@@ -250,7 +251,7 @@ void loopStateMachine() {
                 // Wait for "A" from the MSP432
                 if (SerialPort.available() > 0) {
                     if (SerialPort.read() == 'A') {
-                        digitalWrite(RED_LED, LOW);
+                        send_udp(&thinksAtLocation);
                         Serial.println("Received 'A' from the MSP432!");
                         shouldSendCoordinatesToMSP432 = false;
                         timeWhenReceivedArrivedFromMSP432 = millis();
@@ -262,8 +263,10 @@ void loopStateMachine() {
         
         case WAIT_NEW_POS_READ_SETTLE:
             digitalWrite(GRN_LED, LOW);
+            digitalWrite(RED_LED, LOW);
             if (millis() > timeWhenReceivedArrivedFromMSP432 + 5000) {
                 state = CHECK_IF_COORDS_ARE_GOOD; // After five seconds, move on to the next state
+                Serial.print("Has let coordinates settle and is moving on now.");
             }
             break;
 
@@ -275,6 +278,17 @@ void loopStateMachine() {
                 bool xCoordGood = (currentCoordinates.x - shapeStartingLocationCoordinates.x) < MAX_ERROR_FROM_STARTING_COORDINATES && (currentCoordinates.x - shapeStartingLocationCoordinates.x) > -MAX_ERROR_FROM_STARTING_COORDINATES;
                 bool yCoordGood = (currentCoordinates.y - shapeStartingLocationCoordinates.y) < MAX_ERROR_FROM_STARTING_COORDINATES && (currentCoordinates.y - shapeStartingLocationCoordinates.y) > -MAX_ERROR_FROM_STARTING_COORDINATES;
                 Serial.println("About to check if x and y coordinates are good");
+
+                // Send what the coordinates are to the computer
+                // Say good to go to host computer!
+                readyAtStr = "About to check if these coordinates are good: ";
+                readyAtStr += currentCoordinates.x;
+                readyAtStr += ":";
+                readyAtStr += currentCoordinates.y;                
+                send_udp(&readyAtStr);
+                
+
+                
                 if (xCoordGood && yCoordGood) {
                     // Move on to the next state because the coordinates are good
                     state = SEND_ARRIVED_TO_COMPUTER;

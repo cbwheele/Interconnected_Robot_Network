@@ -89,7 +89,7 @@ while True:
         _unused, isReady = read_data()
         if (isReady):
             print("The robot is now in the correct position!!")
-            state = 0 # Start back over at the beginning
+            state = 1 # Start back over at the beginning to read in the coordinates
         pass
     elif state == 4:
         pass
