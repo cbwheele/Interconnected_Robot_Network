@@ -19,6 +19,7 @@ using namespace std;
 #define RED_LED 33
 #define GRN_LED 32
 
+
 // Other defines
 #define MAX_ERROR_FROM_STARTING_COORDINATES 0.3 // This number specifies that the robots must be within 0.2 units in both the x and y directions of the initial shape coordinates to say "ready" to the ground control station
 
