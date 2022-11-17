@@ -21,7 +21,7 @@ struct MyLink *init_link()
 
 Coordinates getCoordinates(struct MyLink *p) {
 
-    Serial.println("This is inside of getCoordinates function");
+    //Serial.println("This is inside of getCoordinates function");
     struct MyLink *temp = p;
 
     float firstReading = -1;
@@ -31,8 +31,8 @@ Coordinates getCoordinates(struct MyLink *p) {
     {
         temp = temp->next;
         char link_json[50];
-        Serial.println(temp->anchor_addr);
-        Serial.println(temp->range[0]);
+        //Serial.println(temp->anchor_addr);
+        //Serial.println(temp->range[0]);
 
 // 6018 on left
 // 6019 on right
@@ -57,10 +57,10 @@ Coordinates getCoordinates(struct MyLink *p) {
     if (firstReading != -1 && secondReading != -1) {
     // Here I have both firstReading and secondReading as the distance to each of the two anchors:
       
-      Serial.print("Two distances: ");
-      Serial.print(firstReading);
-      Serial.print(", ");
-      Serial.println(secondReading);
+      //Serial.print("Two distances: ");
+      //Serial.print(firstReading);
+      //Serial.print(", ");
+      //Serial.println(secondReading);
 
 
       // Do math to create coordinates from that:
@@ -73,18 +73,18 @@ Coordinates getCoordinates(struct MyLink *p) {
       
       float cos_a = (b * b + c*c - a * a) / (2 * b * c);
       float x = b * cos_a;
-      Serial.print("1-cos_a*cos_a:");
-      Serial.print(1 - cos_a * cos_a);
+      //Serial.print("1-cos_a*cos_a:");
+      //Serial.print(1 - cos_a * cos_a);
       float y = b * sqrt(1 - cos_a * cos_a);
 
       // Set the coordinates inside of the returnCoordinates objects
       returnCoordinates.x = x;
       returnCoordinates.y = y;
 
-      Serial.print("Calculated coordinates: ");
-      Serial.print(x);
-      Serial.print(", ");
-      Serial.println(y);
+      //Serial.print("Calculated coordinates: ");
+      //Serial.print(x);
+      //Serial.print(", ");
+      //Serial.println(y);
 
       // Send the data over UART to the MSP432
       
