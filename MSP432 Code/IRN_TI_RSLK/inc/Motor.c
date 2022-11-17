@@ -87,7 +87,8 @@ void Motor_Init(void){
 // Output: none
 void Motor_Stop(void){
   // write this as part of Lab 13
-  Motor_Forward(0,0);
+  PWM_Duty3(0);
+  PWM_Duty4(0);
   P2->OUT  &= ~0xC0;    // PWM off == Enable off
   P3->OUT  |=  0xC0;    // Output = 1,  Sleep = 1
   
