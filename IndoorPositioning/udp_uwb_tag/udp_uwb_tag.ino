@@ -20,7 +20,7 @@ using namespace std;
 #define GRN_LED 32
 
 // Other defines
-#define MAX_ERROR_FROM_STARTING_COORDINATES 0.2 // This number specifies that the robots must be within 0.2 units in both the x and y directions of the initial shape coordinates to say "ready" to the ground control station
+#define MAX_ERROR_FROM_STARTING_COORDINATES 0.3 // This number specifies that the robots must be within 0.2 units in both the x and y directions of the initial shape coordinates to say "ready" to the ground control station
 
 // WiFi credentials:
 const char *ssid = "ncsu";
@@ -34,7 +34,10 @@ HardwareSerial SerialPort(2); // This is the serial port to the MSP432. It is de
 
 
 // IP address of host, which is currently the computer ground control station:
-const char *host = "10.154.8.112";
+const char *host = "10.154.35.190";
+// Caleb: 10.154.35.190
+// Brandon: 10.154.1.148
+
 
 
 
@@ -275,8 +278,8 @@ void loopStateMachine() {
             {
                 // Check if the coordinates are good or not. This means if their errors are within the margin set in the macros at the top of the file
                 currentCoordinates = getCoordinates(uwb_data);
-                bool xCoordGood = (currentCoordinates.x - shapeStartingLocationCoordinates.x) < MAX_ERROR_FROM_STARTING_COORDINATES && (currentCoordinates.x - shapeStartingLocationCoordinates.x) > -MAX_ERROR_FROM_STARTING_COORDINATES;
-                bool yCoordGood = (currentCoordinates.y - shapeStartingLocationCoordinates.y) < MAX_ERROR_FROM_STARTING_COORDINATES && (currentCoordinates.y - shapeStartingLocationCoordinates.y) > -MAX_ERROR_FROM_STARTING_COORDINATES;
+                bool xCoordGood = (currentCoordinates.x - shapeStartingLocationCoordinates.x) <= MAX_ERROR_FROM_STARTING_COORDINATES && (currentCoordinates.x - shapeStartingLocationCoordinates.x) > -MAX_ERROR_FROM_STARTING_COORDINATES;
+                bool yCoordGood = (currentCoordinates.y - shapeStartingLocationCoordinates.y) <= MAX_ERROR_FROM_STARTING_COORDINATES && (currentCoordinates.y - shapeStartingLocationCoordinates.y) > -MAX_ERROR_FROM_STARTING_COORDINATES;
                 Serial.println("About to check if x and y coordinates are good");
 
                 // Send what the coordinates are to the computer
