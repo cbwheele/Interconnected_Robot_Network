@@ -35,8 +35,8 @@ HardwareSerial SerialPort(2); // This is the serial port to the MSP432. It is de
 
 
 // IP address of host, which is currently the computer ground control station:
-const char *host = "10.154.35.190";
-// Caleb: 10.154.35.190
+const char *host = "10.154.40.99";
+// Caleb: 10.154.40.99
 // Brandon: 10.154.1.148
 
 
@@ -152,6 +152,7 @@ Coordinates firstReadingCoordinates = Coordinates();
 int len = 0;
 int packetSize = 0;
 Coordinates shapeStartingLocationCoordinates = Coordinates();
+int timeSentGo;
 
 
 // State machine states
@@ -163,6 +164,7 @@ Coordinates shapeStartingLocationCoordinates = Coordinates();
 #define WAIT_NEW_POS_READ_SETTLE    (5)
 #define CHECK_IF_COORDS_ARE_GOOD    (6)
 #define SEND_ARRIVED_TO_COMPUTER    (7)
+#define WAIT_TO_START_SENDING_COORDINATES (8)
 
 
 
@@ -244,10 +246,19 @@ void loopStateMachine() {
                 SerialPort.print('\r');
 
                 Serial.println("Just sent target coordinates to MSP432");
-                shouldSendCoordinatesToMSP432 = true; // Start continually sending "current location" coordinates on to the MSP432, which will continue every second
-                state = WAIT_FOR_ARRIVED_FROM_MSP;
+                timeSentGo = millis();
+                state = WAIT_TO_START_SENDING_COORDINATES;
             }
             break;
+        
+        case WAIT_TO_START_SENDING_COORDINATES:
+            {
+                if (millis() > timeSentGo + 100) { // Delay by .1 seconds to start sending current coordinates
+                    shouldSendCoordinatesToMSP432 = true; // Start continually sending "current location" coordinates on to the MSP432, which will continue every second
+                    state = WAIT_FOR_ARRIVED_FROM_MSP;
+                }
+                break;
+            }
 
         // Wait for the message from the MSP432 "A" which means it thinks it has arrived
         case WAIT_FOR_ARRIVED_FROM_MSP:
