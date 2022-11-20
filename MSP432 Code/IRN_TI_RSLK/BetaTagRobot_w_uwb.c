@@ -93,42 +93,42 @@ void Timer_Done(void)
     timerDone = 1;
 }
 
-
 /*
-// I could not get this to work on regular GPIO interrupts
-// For some reason it appears that Port 10 may not have an interrupt vector?!
-// Link to forum that says that: https://e2e.ti.com/support/microcontrollers/msp-low-power-microcontrollers-group/msp430/f/msp-low-power-microcontroller-forum/501845/msp432-gpio-interrupts
-//
-void Init_Tachometer(void) {
-    P10->SEL0 &= ~0x30; // 10.4 and 10.5 GPIO
-    P10->SEL1 &= ~0x30; // 10.4 and 10.5 GPIO
-    P10->DIR  &= ~0x30; // Direction is input
-    //P10->OUT |= 0x30;
-    //P10->REN |= 0x30;
-    P10->IFG &= ~0x30;
-    P10->IES |= 0x30;
-    P10->IE  |= 0x30;
-    //NVIC->IP[4] = (NVIC->IP[4]&0xFFFFFF00)|0x00000040; // priority 2
-    //NVIC->ISER[1] |= 0x00001000; // Enable port 10 interrupts which is 44?
-    NVIC->IP[4] = (NVIC->IP[4]&0xFFFFFF00)|0x00000040; // priority 2
-    NVIC->ISER[0] |= 0x0000C000;     // set pin 15 and 14
-    //MAP_GPIO_setAsInputPinWithPullUpResistor(GPIO_PORT_P10, GPIO_PIN3);
-    //MAP_GPIO_clearInterruptFlag(GPIO_PORT_P10, GPIO_PIN3);
-}
-void PORT10_IRQHandler(void) {
-    if (P10->IFG & 0x10) {
-        // Right?
-    }
-    if (P10->IFG & 0x20) {
-        // Left?
-    }
-}
-*/
+ // I could not get this to work on regular GPIO interrupts
+ // For some reason it appears that Port 10 may not have an interrupt vector?!
+ // Link to forum that says that: https://e2e.ti.com/support/microcontrollers/msp-low-power-microcontrollers-group/msp430/f/msp-low-power-microcontroller-forum/501845/msp432-gpio-interrupts
+ //
+ void Init_Tachometer(void) {
+ P10->SEL0 &= ~0x30; // 10.4 and 10.5 GPIO
+ P10->SEL1 &= ~0x30; // 10.4 and 10.5 GPIO
+ P10->DIR  &= ~0x30; // Direction is input
+ //P10->OUT |= 0x30;
+ //P10->REN |= 0x30;
+ P10->IFG &= ~0x30;
+ P10->IES |= 0x30;
+ P10->IE  |= 0x30;
+ //NVIC->IP[4] = (NVIC->IP[4]&0xFFFFFF00)|0x00000040; // priority 2
+ //NVIC->ISER[1] |= 0x00001000; // Enable port 10 interrupts which is 44?
+ NVIC->IP[4] = (NVIC->IP[4]&0xFFFFFF00)|0x00000040; // priority 2
+ NVIC->ISER[0] |= 0x0000C000;     // set pin 15 and 14
+ //MAP_GPIO_setAsInputPinWithPullUpResistor(GPIO_PORT_P10, GPIO_PIN3);
+ //MAP_GPIO_clearInterruptFlag(GPIO_PORT_P10, GPIO_PIN3);
+ }
+ void PORT10_IRQHandler(void) {
+ if (P10->IFG & 0x10) {
+ // Right?
+ }
+ if (P10->IFG & 0x20) {
+ // Left?
+ }
+ }
+ */
 
 volatile uint16_t left_counter = 0;
 volatile uint16_t right_counter = 0;
 
-void TimerA3Capture_Init(){
+void TimerA3Capture_Init()
+{
     // write this for Lab 16
     P10->SEL0 |= 0x30;      //set SEL0 of P10.4 and P10.5 to 1      ==> SEL = 01
     P10->SEL1 &= ~0x30;     //set SEL1 of P10.4 and P10.5 to 0
@@ -138,42 +138,36 @@ void TimerA3Capture_Init(){
     TIMER_A3->CCTL[0] = 0x4910; //bit 0 and bit 4 set by 10.4
     TIMER_A3->CCTL[1] = 0x4910; //bit 0 and bit 4 set by 10.5
     TIMER_A3->EX0 &= ~0x0007;       // configure for input clock divider /1
-    NVIC->IP[4] = (NVIC->IP[4]&0xFFFFFF00)|0x00000040; // priority 2
+    NVIC->IP[4] = (NVIC->IP[4] & 0xFFFFFF00) | 0x00000040; // priority 2
     NVIC->ISER[0] |= 0x0000C000;     // set pin 15 and 14
-    TIMER_A3->CTL |= 0x0024;        // reset and start Timer A3 in continuous up mode
+    TIMER_A3->CTL |= 0x0024;   // reset and start Timer A3 in continuous up mode
 }
 
-
-void TA3_0_IRQHandler(void){
-    TIMER_A3->CCTL[0] &= ~0x0001;             // acknowledge capture/compare interrupt 0
+void TA3_0_IRQHandler(void)
+{
+    TIMER_A3->CCTL[0] &= ~0x0001;     // acknowledge capture/compare interrupt 0
     right_counter++;
 
 }
 
-void TA3_N_IRQHandler(void){
-    TIMER_A3->CCTL[1] &= ~0x0001;             // acknowledge capture/compare interrupt 0
-    left_counter ++;
+void TA3_N_IRQHandler(void)
+{
+    TIMER_A3->CCTL[1] &= ~0x0001;     // acknowledge capture/compare interrupt 0
+    left_counter++;
 }
 
-
-
-
-
-
-
-
-
-void Init_Bumper_Switches(void) {
+void Init_Bumper_Switches(void)
+{
 
     P4->SEL0 &= ~0xED; // GPIO
     P4->SEL1 &= ~0xED; // GPIO
-    P4->DIR  &= ~0xED; // Direction is input
+    P4->DIR &= ~0xED; // Direction is input
     P4->OUT |= 0xED;
     P4->REN |= 0xED;
     P4->IFG &= ~0xED;
     P4->IES |= 0xED;
-    P4->IE  |= 0xED;
-    NVIC->IP[8] = (NVIC->IP[8]&0x00FFFFFF)|0x40000000; // priority 2
+    P4->IE |= 0xED;
+    NVIC->IP[8] = (NVIC->IP[8] & 0x00FFFFFF) | 0x40000000; // priority 2
     NVIC->ISER[1] |= 0x00000040; // Enable 38
     // 35 was ISER[1] = 0x00000008;  // 00000000000001000
     // 40 was ISER[1] = 0x00000100;  // 00000000100000000
@@ -183,9 +177,11 @@ void Init_Bumper_Switches(void) {
 
 volatile unsigned char stage = 0;
 
-void PORT4_IRQHandler(void) {
-      // This is the IRQ for Port 4 which contains the bumper switches
-    if (P4->IFG & 0x0ED) {
+void PORT4_IRQHandler(void)
+{
+    // This is the IRQ for Port 4 which contains the bumper switches
+    if (P4->IFG & 0x0ED)
+    {
         P4->IFG &= ~0xED;
         // This means that a bumper switch was pressed
         stage = 100;
@@ -193,10 +189,8 @@ void PORT4_IRQHandler(void) {
     }
 }
 
-
 #define MOVING_SPEED 2000
 #define UNIT_PER_ROTATION 9.45
-
 
 int main(void)
 {        // Main State Machine
@@ -246,7 +240,6 @@ int main(void)
     Init_Bumper_Switches();
     TimerA3Capture_Init();
 
-
     /// JUST FOR TESTING DELETE THIS!!!!!!!
     //stage = 13;
     //howManyToMoveStraight = 30;
@@ -255,7 +248,8 @@ int main(void)
     {
         switch (stage)
         {
-        case 100: {
+        case 100:
+        {
             Motor_Stop(); // Stay in this state forever
             // Turn the LED red to show that it hit something with the bumper switch
             break;
@@ -324,27 +318,30 @@ int main(void)
         case 3:               // Move forward
         {
 
-
             // Code for going straight
-            if (right_counter == rightEncoderCutoffVal) {
+            if (right_counter == rightEncoderCutoffVal)
+            {
                 currentRightSpeed = 0;
                 leftEncoderCutoffVal++;
                 right_counter++;
 
             }
-            if (left_counter == leftEncoderCutoffVal) {
+            if (left_counter == leftEncoderCutoffVal)
+            {
                 currentLeftSpeed = 0;
                 rightEncoderCutoffVal++;
                 left_counter++;
             }
-            if (right_counter >= rightEncoderCutoffVal && left_counter >= leftEncoderCutoffVal)
+            if (right_counter >= rightEncoderCutoffVal
+                    && left_counter >= leftEncoderCutoffVal)
             {
                 left_counter = 0;
                 right_counter = 0;
                 currentRightSpeed = MOVING_SPEED;
                 currentLeftSpeed = MOVING_SPEED;
 
-                if (movingForwardCounter++ > 6) {
+                if (movingForwardCounter++ > 6)
+                {
                     UART1_OutChar('3');
                     stage++;
                     timer_set = 0;
@@ -352,8 +349,6 @@ int main(void)
                 }
             }
             // End of code to go straight
-
-
 
             Motor_Forward(currentLeftSpeed, currentRightSpeed);
 
@@ -434,13 +429,11 @@ int main(void)
                 north_angle_atan = 270
                         + atan(change_y / change_x) * 180 / 3.14159;
 
-
             }
             else if (!going_up && going_right)
             {
                 north_angle_atan = 90
                         + atan(change_y / change_x) * 180 / 3.14159;
-
 
             }
             else if (!going_up && !going_right)
@@ -458,7 +451,7 @@ int main(void)
             stage++;
             timer_set = 0;
             na_turn_R = 0;
-            if(north_angle_atan > 180)
+            if (north_angle_atan > 180)
             {
                 north_angle_atan -= 180;
                 na_turn_R = 1;
@@ -476,7 +469,8 @@ int main(void)
                 currentRightSpeed = 2000;
                 currentLeftSpeed = 2000;
 
-                turnToNorthEncoderCount = north_angle_atan*ONE_DEGREE_ENCODERS;
+                turnToNorthEncoderCount =
+                        north_angle_atan * ONE_DEGREE_ENCODERS;
             }
 
             // Code to turn by the specific number of degrees
@@ -488,13 +482,16 @@ int main(void)
             {
                 currentLeftSpeed = 0;
             }
-            if (na_turn_R){
+            if (na_turn_R)
+            {
                 Motor_Right(currentLeftSpeed, currentRightSpeed);
             }
-            else{
+            else
+            {
                 Motor_Left(currentLeftSpeed, currentRightSpeed);
             }
-            if (right_counter >= turnToNorthEncoderCount || left_counter >= turnToNorthEncoderCount)
+            if (right_counter >= turnToNorthEncoderCount
+                    || left_counter >= turnToNorthEncoderCount)
             {
                 UART1_OutChar('8');
                 Motor_Stop();
@@ -504,7 +501,6 @@ int main(void)
                 right_counter = 0;
             }
             // Code to turn by the specific number of degrees
-
 
             break;
         }
@@ -525,21 +521,22 @@ int main(void)
             break;
         }
 
-
         case 10: // y_Decision:
         {
 
             if (current_y_cor - desir_y_cor > 0.1)
             {
-              //stage = MoveForward;                           // keep moving forward
-                howManyToMoveStraight = (current_y_cor - desir_y_cor)*UNIT_PER_ROTATION;
+                //stage = MoveForward;                           // keep moving forward
+                howManyToMoveStraight = (current_y_cor - desir_y_cor)
+                        * UNIT_PER_ROTATION;
                 movingForward = 1;
             }
             else if (desir_y_cor - current_y_cor > 0.1)
             {
                 //stage = MoveBackward;
                 movingForward = 0;
-                howManyToMoveStraight = (desir_y_cor - current_y_cor)*UNIT_PER_ROTATION;
+                howManyToMoveStraight = (desir_y_cor - current_y_cor)
+                        * UNIT_PER_ROTATION;
             }
             else
             {
@@ -554,7 +551,8 @@ int main(void)
 
         case 11: // Move in Y axis
         {
-            if (!timer_set) {
+            if (!timer_set)
+            {
                 timer_set = 1;
 
                 // Initialize
@@ -580,7 +578,8 @@ int main(void)
                 rightEncoderCutoffVal++;
                 left_counter++;
             }
-            if (right_counter >= rightEncoderCutoffVal && left_counter >= leftEncoderCutoffVal)
+            if (right_counter >= rightEncoderCutoffVal
+                    && left_counter >= leftEncoderCutoffVal)
             {
                 left_counter = 0;
                 right_counter = 0;
@@ -597,9 +596,12 @@ int main(void)
             }
             // End of code to go straight
 
-            if (movingForward) {
+            if (movingForward)
+            {
                 Motor_Forward(currentLeftSpeed, currentRightSpeed);
-            } else {
+            }
+            else
+            {
                 Motor_Backward(currentLeftSpeed, currentRightSpeed);
             }
 
@@ -626,7 +628,8 @@ int main(void)
         case 13: //FaceWest:
         {
 
-            if (!timer_set) {
+            if (!timer_set)
+            {
                 timer_set = 1;
                 right_counter = 0;
                 left_counter = 0;
@@ -646,7 +649,8 @@ int main(void)
 
             Motor_Left(currentLeftSpeed, currentRightSpeed);
 
-            if (right_counter >= NINETY_TURN_ENCODERS && left_counter >= NINETY_TURN_ENCODERS)
+            if (right_counter >= NINETY_TURN_ENCODERS
+                    && left_counter >= NINETY_TURN_ENCODERS)
             {
                 timer_set = 0;
                 left_counter = 0;
@@ -662,15 +666,18 @@ int main(void)
         case 14: // X decision now updated for encoder values
         {
 
-            if (desir_x_cor - current_x_cor > 0.1) {    // need to move backwards
-               movingForward = 0;
-               howManyToMoveStraight = (desir_x_cor - current_x_cor)*UNIT_PER_ROTATION;
+            if (desir_x_cor - current_x_cor > 0.1)
+            {    // need to move backwards
+                movingForward = 0;
+                howManyToMoveStraight = (desir_x_cor - current_x_cor)
+                        * UNIT_PER_ROTATION;
             }
             else if (current_x_cor - desir_x_cor > 0.1)
             {
                 // Need to move forwards
                 movingForward = 1;
-                howManyToMoveStraight = (current_x_cor - desir_x_cor)*UNIT_PER_ROTATION;
+                howManyToMoveStraight = (current_x_cor - desir_x_cor)
+                        * UNIT_PER_ROTATION;
             }
             else
             {
@@ -741,7 +748,6 @@ int main(void)
 
             break;
         }
-
 
         case 16: //SendA:            // Where receives commands from esp32
         {
