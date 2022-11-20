@@ -225,7 +225,7 @@ int main(void)
 
     char facing_N = 0;
     char facing_E = 0;
-
+    char na_turn_R = 0;
     int currentRightSpeed = 0;
     int currentLeftSpeed = 0;
     int rightEncoderCutoffVal = 100;
@@ -270,6 +270,7 @@ int main(void)
                 desir_x_cor = strtof(string, &pend);
                 desir_y_cor = strtof(pend, NULL);
                 stage++;
+                UART1_OutChar('0');
             }
             num_of_cor = 0;
             break;
@@ -287,6 +288,7 @@ int main(void)
             num_of_cor++;
             if (num_of_cor >= 8)
             {
+                UART1_OutChar('1');
                 timer_set = 0;
                 stage++;
             }
@@ -294,6 +296,7 @@ int main(void)
         }
         case 2:                     //Averaging
         {
+
             float x_sum = 0;
             float y_sum = 0;
             for (int i = 0; i < 8; i++)
@@ -307,6 +310,7 @@ int main(void)
             // Now, initial_x_cor and initial_y_cor have the initial coordinate.
 
             stage++;                        //Go ahead and move forward
+            UART1_OutChar('2');
             currentRightSpeed = MOVING_SPEED;
             currentLeftSpeed = MOVING_SPEED;
             right_counter = 0;
@@ -319,7 +323,6 @@ int main(void)
 
         case 3:               // Move forward
         {
-
 
 
             // Code for going straight
@@ -342,6 +345,7 @@ int main(void)
                 currentLeftSpeed = MOVING_SPEED;
 
                 if (movingForwardCounter++ > 6) {
+                    UART1_OutChar('3');
                     stage++;
                     timer_set = 0;
                     Motor_Stop();
@@ -367,6 +371,7 @@ int main(void)
             num_of_cor = 0;
             if (timerDone)
             {
+                UART1_OutChar('4');
                 stage++;
                 timer_set = 0;
             }
@@ -375,6 +380,7 @@ int main(void)
 
         case 5:               // Get  second coordinates
         {
+
             RxPutI = 0;
             RxGetI = 0;
             UART1_InString(string, 19); //IMPORTANT: message separate with space " ", end with CR "\r"
@@ -386,6 +392,7 @@ int main(void)
             if (num_of_cor >= 8)
             {
                 timer_set = 0;
+                UART1_OutChar('5');
                 stage++;
             }
             break;
@@ -402,6 +409,7 @@ int main(void)
             }
             current_x_cor = x_sum / 8;
             current_y_cor = y_sum / 8;
+            UART1_OutChar('6');
             stage++;                        //go back and move motors
 
             break;
@@ -419,41 +427,47 @@ int main(void)
             {
                 north_angle_atan = 90
                         + atan(change_y / change_x) * 180 / 3.14159;
-                //north_angle_atan2 = 90 +atan2(change_y,change_x)*180/3.14159;
+
             }
             else if (going_up && !going_right)
             {
                 north_angle_atan = 270
                         + atan(change_y / change_x) * 180 / 3.14159;
-                //north_angle_atan2 = 270 + atan2(change_y,change_x)*180/3.14159;
+
 
             }
             else if (!going_up && going_right)
             {
                 north_angle_atan = 90
                         + atan(change_y / change_x) * 180 / 3.14159;
-                //north_angle_atan2 =90 + atan2(change_y,change_x)*180/3.14159;
+
 
             }
             else if (!going_up && !going_right)
             {
                 north_angle_atan = 270
                         + atan(change_y / change_x) * 180 / 3.14159;
-                //north_angle_atan2 =  270  + atan2(change_y,change_x)*180/3.14159;
+
             }
             else
             {
                 // This is really bad
                 int n_a;
             }
-
+            UART1_OutChar('7');
             stage++;
             timer_set = 0;
+            na_turn_R = 0;
+            if(north_angle_atan > 180)
+            {
+                north_angle_atan -= 180;
+                na_turn_R = 1;
+
+            }
             break;
         }
         case 8:   //Turn to north
         {
-
             if (!timer_set)
             {
                 timer_set = 1;
@@ -474,11 +488,15 @@ int main(void)
             {
                 currentLeftSpeed = 0;
             }
-
-            Motor_Left(currentLeftSpeed, currentRightSpeed);
-
+            if (na_turn_R){
+                Motor_Right(currentLeftSpeed, currentRightSpeed);
+            }
+            else{
+                Motor_Left(currentLeftSpeed, currentRightSpeed);
+            }
             if (right_counter >= turnToNorthEncoderCount || left_counter >= turnToNorthEncoderCount)
             {
+                UART1_OutChar('8');
                 Motor_Stop();
                 stage++;
                 timer_set = 0;
@@ -500,6 +518,7 @@ int main(void)
             }
             if (timerDone)
             {
+                UART1_OutChar('9');
                 timer_set = 0;
                 stage++;
             }
@@ -509,6 +528,7 @@ int main(void)
 
         case 10: // y_Decision:
         {
+
             if (current_y_cor - desir_y_cor > 0.1)
             {
               //stage = MoveForward;                           // keep moving forward
@@ -525,7 +545,7 @@ int main(void)
             {
                 stage++; // This basically means it will skip the "Move in Y axis" state
             }
-
+            UART1_OutChar('10');
             stage++;
             timer_set = 0;
 
@@ -569,6 +589,7 @@ int main(void)
 
                 if (movingForwardCounter++ >= howManyToMoveStraight)
                 {
+                    UART1_OutChar('11');
                     stage++;
                     timer_set = 0;
                     Motor_Stop();
@@ -587,6 +608,7 @@ int main(void)
 
         case 12: // Delay for one second
         {
+
             if (!timer_set)
             {
                 TimerA2_Init(&Timer_Done, 512); //wait for 30s to start up
@@ -595,6 +617,7 @@ int main(void)
             }
             if (timerDone)
             {
+                UART1_OutChar('12');
                 timer_set = 0;
                 stage++;
             }
@@ -602,6 +625,7 @@ int main(void)
         }
         case 13: //FaceWest:
         {
+
             if (!timer_set) {
                 timer_set = 1;
                 right_counter = 0;
@@ -629,6 +653,7 @@ int main(void)
                 right_counter = 0;
                 stage++;
                 Motor_Stop();
+                UART1_OutChar('13');
             }
             // End of code to turn ninety degrees
             break;
@@ -636,6 +661,7 @@ int main(void)
 
         case 14: // X decision now updated for encoder values
         {
+
             if (desir_x_cor - current_x_cor > 0.1) {    // need to move backwards
                movingForward = 0;
                howManyToMoveStraight = (desir_x_cor - current_x_cor)*UNIT_PER_ROTATION;
@@ -650,6 +676,7 @@ int main(void)
             {
                 stage++;
             }
+            UART1_OutChar('14');
             stage++;
             timer_set = 0;
             break;
@@ -695,6 +722,7 @@ int main(void)
 
                 if (movingForwardCounter++ >= howManyToMoveStraight)
                 {
+                    UART1_OutChar('15');
                     stage++;
                     timer_set = 0;
                     Motor_Stop();
