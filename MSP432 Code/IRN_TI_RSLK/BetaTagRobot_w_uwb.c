@@ -600,7 +600,7 @@ int main(void)
             }
             break;
         }
-        case 13: //FaceEast:
+        case 13: //FaceWest:
         {
             if (!timer_set) {
                 timer_set = 1;
@@ -620,7 +620,7 @@ int main(void)
                 currentLeftSpeed = 0;
             }
 
-            Motor_Right(currentLeftSpeed, currentRightSpeed);
+            Motor_Left(currentLeftSpeed, currentRightSpeed);
 
             if (right_counter >= NINETY_TURN_ENCODERS && left_counter >= NINETY_TURN_ENCODERS)
             {
@@ -636,15 +636,15 @@ int main(void)
 
         case 14: // X decision now updated for encoder values
         {
-            if (current_x_cor - desir_x_cor > 0.1) {    // need to move backwards
+            if (desir_x_cor - current_x_cor > 0.1) {    // need to move backwards
                movingForward = 0;
-               howManyToMoveStraight = (current_x_cor - desir_x_cor)*UNIT_PER_ROTATION;
+               howManyToMoveStraight = (desir_x_cor - current_x_cor)*UNIT_PER_ROTATION;
             }
-            else if (desir_x_cor - current_x_cor > 0.1)
+            else if (current_x_cor - desir_x_cor > 0.1)
             {
                 // Need to move forwards
                 movingForward = 1;
-                howManyToMoveStraight = (desir_x_cor - current_x_cor)*UNIT_PER_ROTATION;
+                howManyToMoveStraight = (current_x_cor - desir_x_cor)*UNIT_PER_ROTATION;
             }
             else
             {
