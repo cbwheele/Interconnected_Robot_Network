@@ -217,6 +217,9 @@ int main(void)
 
     float north_angle_atan;
 
+    float circle_angle;
+    float num_of_circle_ticks;
+
     char facing_N = 0;
     char facing_E = 0;
     char na_turn_R = 0;
@@ -240,9 +243,9 @@ int main(void)
     Init_Bumper_Switches();
     TimerA3Capture_Init();
 
-    /// JUST FOR TESTING DELETE THIS!!!!!!!
-    //stage = 13;
-    //howManyToMoveStraight = 30;
+    /// JUST FOR TESTING DELETE THIS!!!!!!!                             // BREAKING SCRIPT JUST FOR TESTING
+    //stage = 20;
+    //howManyToMoveStraight = 50;
 
     while (1)
     {
@@ -264,7 +267,6 @@ int main(void)
                 desir_x_cor = strtof(string, &pend);
                 desir_y_cor = strtof(pend, NULL);
                 stage++;
-                UART1_OutChar('0');
             }
             num_of_cor = 0;
             break;
@@ -749,11 +751,157 @@ int main(void)
             break;
         }
 
-        case 16: //SendA:            // Where receives commands from esp32
+        case 16: //Send A:            // Where receives commands from esp32
         {
             Motor_Stop();
             UART1_OutChar('A');
-            stage = 0;
+            stage++;       // This is different now that we're making the shapes
+            break;
+        }
+        case 17:    // Wait for and receive orientation and how long to go in circle
+        {
+
+            // "C\r 90 40"
+            Motor_Stop();
+            UART1_InString(string, 19); //IMPORTANT: message separate with space " ", end with CR "\r"
+            if (string[0] == 'C')
+            {
+                UART1_InString(string, 19);
+                circle_angle = strtof(string, &pend);
+                num_of_circle_ticks = strtof(pend, NULL);
+                stage++;
+            }
+            break;
+        }
+        case 18:    // Figure out what angle to turn and store it in north_angle_atan
+        {
+            // Code for spinning to face orientation
+            // Move to face in "circle_angle" direction
+            // We are currently facing West
+
+            if (circle_angle > 270) { // Need to turn right by less than 90 degrees
+                na_turn_R = 1;
+                north_angle_atan = circle_angle - 270;
+            }
+            else if (circle_angle < 90) { // Need to turn to the right by more than 90 degrees but less than 180 degrees
+                na_turn_R = 1;
+                north_angle_atan = circle_angle + 90;
+            }
+            else { // Need to turn to the left by 0-180 degrees
+                na_turn_R = 0;
+                north_angle_atan = 270 - circle_angle;
+            }
+            break;
+        }
+        case 19: // Turn to face into desired angle
+        {
+            if (!timer_set)
+            {
+                timer_set = 1;
+                right_counter = 0;
+                left_counter = 0;
+                currentRightSpeed = 2000;
+                currentLeftSpeed = 2000;
+
+                turnToNorthEncoderCount = north_angle_atan * ONE_DEGREE_ENCODERS;
+            }
+
+            // Code to turn by the specific number of degrees
+            if (right_counter == turnToNorthEncoderCount)
+            {
+                currentRightSpeed = 0;
+            }
+            if (left_counter == turnToNorthEncoderCount)
+            {
+                currentLeftSpeed = 0;
+            }
+            if (na_turn_R)
+            {
+                Motor_Right(currentLeftSpeed, currentRightSpeed);
+            }
+            else
+            {
+                Motor_Left(currentLeftSpeed, currentRightSpeed);
+            }
+            if (right_counter >= turnToNorthEncoderCount
+                    || left_counter >= turnToNorthEncoderCount)
+            {
+                UART1_OutChar('8');
+                Motor_Stop();
+                stage++;
+                timer_set = 0;
+                left_counter = 0;
+                right_counter = 0;
+            }
+            // Code to turn by the specific number of degrees
+            break;
+        }
+        case 20:    // Wait for "Go" from ground control station
+        {
+            // "S" for start and shape
+            Motor_Stop();
+            UART1_InString(string, 19); //IMPORTANT: message separate with space " ", end with CR "\r"
+            if (string[0] == 'S')
+            {
+                timer_set = 0;
+                stage++;
+            }
+            break;
+        }
+        case 21:    // Turn in a circle for num_of_circle_ticks steps
+        {
+            if (!timer_set)
+            {
+                timer_set = 1;
+
+                // Initialize
+                currentRightSpeed = 2000;
+                currentLeftSpeed = 2680;
+                right_counter = 0;
+                left_counter = 0;
+                rightEncoderCutoffVal = 100;
+                leftEncoderCutoffVal = 132;
+                movingForwardCounter = 0; // How many 1/4 turns it has gone forward.
+            }
+
+            // Code for going in a circle
+            if (right_counter == rightEncoderCutoffVal)
+            {
+                currentRightSpeed = 0;
+                leftEncoderCutoffVal++;
+                right_counter++;
+            }
+            if (left_counter == leftEncoderCutoffVal)
+            {
+                currentLeftSpeed = 0;
+                rightEncoderCutoffVal++;
+                left_counter++;
+            }
+            if (right_counter >= rightEncoderCutoffVal
+                    && left_counter >= leftEncoderCutoffVal)
+            {
+                left_counter = 0;
+                right_counter = 0;
+                currentRightSpeed = 2000;
+                currentLeftSpeed = 2680;
+
+                if (movingForwardCounter++ >= num_of_circle_ticks)
+                {
+                    stage++;
+                    timer_set = 0;
+                    Motor_Stop();
+                }
+            }
+            // End of code to go straight
+
+
+            Motor_Forward(currentLeftSpeed, currentRightSpeed);
+            break;
+
+        }
+        case 22:
+        {
+            Motor_Stop();
             break;
         }
 
