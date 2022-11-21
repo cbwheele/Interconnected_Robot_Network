@@ -82,8 +82,31 @@ while True:
         _unused, isReady = read_data()
         if (isReady):
             print("The robot is now in the correct position!!")
-            state = 1 # Start back over at the beginning to read in the coordinates
+            state = 4 # Start back over at the beginning to read in the coordinates
     elif state == 4:
+        circle_angle = input("Input circle angle (3 digits): ")
+        num_ticks = input("Input num ticks (3 digits): ")
+        # Send "info for circle" back to ESP32
+        stringToESP32 = "C" + circle_angle + ":" + num_ticks
+        print("About to send this to ESP32: ", stringToESP32)
+        outgoingSock.sendto(bytes(stringToESP32, "utf-8"), (addr[0], UDP_PORT))
+        print("Just sent message over UDP out about cricle information")
+        state = 5
+        pass
+    elif state == 5:
+        input("Click enter to go forward: ")
+        print("Will send S")
+        stringToESP32 = "S"
+        print("About to send this to ESP32: ", stringToESP32)
+        outgoingSock.sendto(bytes(stringToESP32, "utf-8"), (addr[0], UDP_PORT))
+        print("Send S to ESP32")
+        state = 6
+        pass
+    elif state == 6:
+        pass
+    elif state == 7:
+        pass
+    elif state == 8:
         pass
 
 

@@ -62,6 +62,9 @@ int state = 0; // The state of the large state machine
 int timeWhenDWM100Initialized;
 int timeWhenReceivedArrivedFromMSP432;
 
+int circle_angle;
+int num_ticks;
+
 
 
 // Setup function:
@@ -327,16 +330,79 @@ void loopStateMachine() {
                 state = 15;
             }
             break;
-        case 15:
+        case 1000:
             {
                 Serial.println("ESP32 code is now about to loop back to get another set of coordinates");
                 state = WAIT_FOR_NON_NULL_READINGS;
             }
             break;
+        case 15:
+            // Read incoming message
+            packetSize = Udp.parsePacket();
+
+            if (packetSize) {
+
+                // read the packet into packetBufffer
+                len = Udp.read(packetBuffer, 255);
+                if (len > 0) {
+                    packetBuffer[len] = 0;
+                }
+                Serial.println("Contents:");
+                Serial.println(packetBuffer);
+
+                // packetBuffer should be of the form "C270:050"
+                if (packetBuffer[0] == 'C') {
+
+                    // Convert the received string into the coordinates:
+                    circle_angle = (packetBuffer[1] - 0x30)*100 + ((packetBuffer[2] - 0x30))*10 + ((packetBuffer[3] - 0x30));
+                    num_ticks = (packetBuffer[5] - 0x30)*100 + ((packetBuffer[6] - 0x30))*10 + ((packetBuffer[7] - 0x30));
+
+                    Serial.print("Information converted: ");
+                    Serial.print(circle_angle);
+                    Serial.print("for degrees to turn, and ");
+                    Serial.print(num_ticks);
+                    Serial.println("for how far to go around circle.");
+                    state = 16;
+                }
+            }
+            break;
         case 16:
             {
-                // Loop in this state forever since at this point it's done now, even though in actuality this is where I would say "Move in a circle"
+                // Send "Go to shapeStartingLocationCoordinates to the MSP432"
+                SerialPort.print("C\r");
+                SerialPort.print(circle_angle);
+                SerialPort.print(" ");
+                SerialPort.print(num_ticks);
+                SerialPort.print('\r');
+
+                Serial.println("Just sent target coordinates to MSP432");
+                timeSentGo = millis();
+                state = 17;
             }
+            break;
+        case 17:
+            // Read incoming message
+            packetSize = Udp.parsePacket();
+
+            if (packetSize) {
+
+                // read the packet into packetBufffer
+                len = Udp.read(packetBuffer, 255);
+                if (len > 0) {
+                    packetBuffer[len] = 0;
+                }
+                Serial.println("Contents:");
+                Serial.println(packetBuffer);
+
+                // packetBuffer should be of the form "C270:050"
+                if (packetBuffer[0] == 'S') {
+
+                    SerialPort.print("S\r");
+                    state = 18;
+                }
+            }
+            break;
+        case 18:
             break;
 
 
