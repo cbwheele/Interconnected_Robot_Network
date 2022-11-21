@@ -60,17 +60,18 @@ outgoingSock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # This creates a
 state = 0
 
 while True:
-    if state == 0:
+    if state == 0: # Wait for "Ready" from the ESP32
         _unused, isReady = read_data()
         if (isReady):
             print("Just received ready from the device!!")
             state = 1
-    elif state == 1:
-        xCoord = input("Input X coordinate: ")
-        yCoord = input("Input Y coordinate: ")
+            
+    elif state == 1: # Get the input for the x and y coordinates from user
+        xCoord = input("Input X coordinate (X.xx): ")
+        yCoord = input("Input Y coordinate (Y.yy): ")
         state = 2
         
-    elif state == 2:
+    elif state == 2: # Send the message "GX.xx:Y.yy" to ESP32
         # Send "go to location" back to ESP32
         stringToESP32 = "M" + xCoord + ":" + yCoord
         print("About to send this to ESP32: ", stringToESP32)
@@ -78,14 +79,16 @@ while True:
         print("Just sent message over UDP out that says to go to the location")
         state = 3
         
-    elif state == 3:
+    elif state == 3: # Wait for "In position" message from ESP32
         _unused, isReady = read_data()
         if (isReady):
             print("The robot is now in the correct position!!")
             state = 4 # Start back over at the beginning to read in the coordinates
-    elif state == 4:
+            
+    elif state == 4: # Get input from user for where to turn and how far to turn in a circle and send that info ("C090:040") to the ESP32
         circle_angle = input("Input circle angle (3 digits): ")
         num_ticks = input("Input num ticks (3 digits): ")
+        
         # Send "info for circle" back to ESP32
         stringToESP32 = "C" + circle_angle + ":" + num_ticks
         print("About to send this to ESP32: ", stringToESP32)
@@ -93,21 +96,22 @@ while True:
         print("Just sent message over UDP out about cricle information")
         state = 5
         pass
-    elif state == 5:
+    
+    elif state == 5: # Wait for user to click enter (or a message and click enter) and then send "S" to the ESP32
         input("Click enter to go forward: ")
         print("Will send S")
         stringToESP32 = "S"
         print("About to send this to ESP32: ", stringToESP32)
         outgoingSock.sendto(bytes(stringToESP32, "utf-8"), (addr[0], UDP_PORT))
         print("Send S to ESP32")
+        print("\nThank you for using the IRN Swarm demo!!")
         state = 6
         pass
     elif state == 6:
+        
+        # Loop forever because we don't want to do anything else.
         pass
-    elif state == 7:
-        pass
-    elif state == 8:
-        pass
+
 
 
 sock.close()
