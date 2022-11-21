@@ -762,6 +762,8 @@ int main(void)
         {
 
             // "C\r 90 40"
+            RxPutI = 0;
+            RxGetI = 0;
             Motor_Stop();
             UART1_InString(string, 19); //IMPORTANT: message separate with space " ", end with CR "\r"
             if (string[0] == 'C')
@@ -791,6 +793,8 @@ int main(void)
                 na_turn_R = 0;
                 north_angle_atan = 270 - circle_angle;
             }
+            stage++;
+            timer_set = 0;
             break;
         }
         case 19: // Turn to face into desired angle
