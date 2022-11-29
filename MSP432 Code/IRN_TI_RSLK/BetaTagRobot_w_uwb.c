@@ -260,6 +260,8 @@ int main(void)
         case 0:                 //Receive desired location to go to
         {
             Motor_Stop();
+            RxPutI = 0; // Trying this out to see if it solves the problem
+            RxGetI = 0;
             UART1_InString(string, 19); //IMPORTANT: message separate with space " ", end with CR "\r"
             if (string[0] == 'G')
             {
@@ -777,16 +779,16 @@ int main(void)
             // string[0] contains the character to act upon
             switch (string[0]) {
             case 'w':
-                Motor_Forward(10000,10000);
+                Motor_Forward(2000,2000);
                 break;
             case 'a':
-                Motor_Left(10000,10000);
+                Motor_Left(2000,2000);
                 break;
             case 's':
-                Motor_Backward(10000,10000);
+                Motor_Backward(2000,2000);
                 break;
             case 'd':
-                Motor_Right(10000,10000);
+                Motor_Right(2000,2000);
                 break;
             case ' ':
                 Motor_Stop();
@@ -818,6 +820,7 @@ int main(void)
                 na_turn_R = 0;
                 north_angle_atan = 270 - circle_angle;
             }
+            stage++;
             break;
         }
         case 19: // Turn to face into desired angle
