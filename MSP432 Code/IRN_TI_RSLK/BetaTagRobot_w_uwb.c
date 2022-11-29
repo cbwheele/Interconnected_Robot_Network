@@ -268,6 +268,16 @@ int main(void)
                 desir_y_cor = strtof(pend, NULL);
                 stage++;
             }
+            else if (string[0] == 'C')
+            {
+                UART1_InString(string, 19);
+                circle_angle = strtof(string, &pend);
+                num_of_circle_ticks = strtof(pend, NULL);
+                stage = 18;                                                                // Jump this straight to 18 which is acting upon values received just here
+            }
+            else if (string[0] == 'M') {
+                stage = 17;                             // Go to the manual control state
+            }
             num_of_cor = 0;
             break;
         }
@@ -755,22 +765,39 @@ int main(void)
         {
             Motor_Stop();
             UART1_OutChar('A');
-            stage++;       // This is different now that we're making the shapes
+            stage = 0;       // Go back to the beginning to decide what to do
             break;
         }
-        case 17:    // Wait for and receive orientation and how long to go in circle
+        case 17:    // Do manual control. Go to zero after manual control
         {
 
-            // "C\r 90 40"
-            Motor_Stop();
+            // w, a, s, d, " ", p
+
             UART1_InString(string, 19); //IMPORTANT: message separate with space " ", end with CR "\r"
-            if (string[0] == 'C')
-            {
-                UART1_InString(string, 19);
-                circle_angle = strtof(string, &pend);
-                num_of_circle_ticks = strtof(pend, NULL);
-                stage++;
+            // string[0] contains the character to act upon
+            switch (string[0]) {
+            case 'w':
+                Motor_Forward(10000,10000);
+                break;
+            case 'a':
+                Motor_Left(10000,10000);
+                break;
+            case 's':
+                Motor_Backward(10000,10000);
+                break;
+            case 'd':
+                Motor_Right(10000,10000);
+                break;
+            case ' ':
+                Motor_Stop();
+                break;
+            case 'p':
+                Motor_Stop();
+                stage = 0;
+                break;
             }
+
+
             break;
         }
         case 18:    // Figure out what angle to turn and store it in north_angle_atan
