@@ -821,6 +821,7 @@ int main(void)
                 north_angle_atan = 270 - circle_angle;
             }
             stage++;
+            timer_set = 0;
             break;
         }
         case 19: // Turn to face into desired angle
