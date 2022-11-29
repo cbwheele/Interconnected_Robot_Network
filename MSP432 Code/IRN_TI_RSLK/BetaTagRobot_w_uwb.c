@@ -93,42 +93,42 @@ void Timer_Done(void)
     timerDone = 1;
 }
 
-
 /*
-// I could not get this to work on regular GPIO interrupts
-// For some reason it appears that Port 10 may not have an interrupt vector?!
-// Link to forum that says that: https://e2e.ti.com/support/microcontrollers/msp-low-power-microcontrollers-group/msp430/f/msp-low-power-microcontroller-forum/501845/msp432-gpio-interrupts
-//
-void Init_Tachometer(void) {
-    P10->SEL0 &= ~0x30; // 10.4 and 10.5 GPIO
-    P10->SEL1 &= ~0x30; // 10.4 and 10.5 GPIO
-    P10->DIR  &= ~0x30; // Direction is input
-    //P10->OUT |= 0x30;
-    //P10->REN |= 0x30;
-    P10->IFG &= ~0x30;
-    P10->IES |= 0x30;
-    P10->IE  |= 0x30;
-    //NVIC->IP[4] = (NVIC->IP[4]&0xFFFFFF00)|0x00000040; // priority 2
-    //NVIC->ISER[1] |= 0x00001000; // Enable port 10 interrupts which is 44?
-    NVIC->IP[4] = (NVIC->IP[4]&0xFFFFFF00)|0x00000040; // priority 2
-    NVIC->ISER[0] |= 0x0000C000;     // set pin 15 and 14
-    //MAP_GPIO_setAsInputPinWithPullUpResistor(GPIO_PORT_P10, GPIO_PIN3);
-    //MAP_GPIO_clearInterruptFlag(GPIO_PORT_P10, GPIO_PIN3);
-}
-void PORT10_IRQHandler(void) {
-    if (P10->IFG & 0x10) {
-        // Right?
-    }
-    if (P10->IFG & 0x20) {
-        // Left?
-    }
-}
-*/
+ // I could not get this to work on regular GPIO interrupts
+ // For some reason it appears that Port 10 may not have an interrupt vector?!
+ // Link to forum that says that: https://e2e.ti.com/support/microcontrollers/msp-low-power-microcontrollers-group/msp430/f/msp-low-power-microcontroller-forum/501845/msp432-gpio-interrupts
+ //
+ void Init_Tachometer(void) {
+ P10->SEL0 &= ~0x30; // 10.4 and 10.5 GPIO
+ P10->SEL1 &= ~0x30; // 10.4 and 10.5 GPIO
+ P10->DIR  &= ~0x30; // Direction is input
+ //P10->OUT |= 0x30;
+ //P10->REN |= 0x30;
+ P10->IFG &= ~0x30;
+ P10->IES |= 0x30;
+ P10->IE  |= 0x30;
+ //NVIC->IP[4] = (NVIC->IP[4]&0xFFFFFF00)|0x00000040; // priority 2
+ //NVIC->ISER[1] |= 0x00001000; // Enable port 10 interrupts which is 44?
+ NVIC->IP[4] = (NVIC->IP[4]&0xFFFFFF00)|0x00000040; // priority 2
+ NVIC->ISER[0] |= 0x0000C000;     // set pin 15 and 14
+ //MAP_GPIO_setAsInputPinWithPullUpResistor(GPIO_PORT_P10, GPIO_PIN3);
+ //MAP_GPIO_clearInterruptFlag(GPIO_PORT_P10, GPIO_PIN3);
+ }
+ void PORT10_IRQHandler(void) {
+ if (P10->IFG & 0x10) {
+ // Right?
+ }
+ if (P10->IFG & 0x20) {
+ // Left?
+ }
+ }
+ */
 
 volatile uint16_t left_counter = 0;
 volatile uint16_t right_counter = 0;
 
-void TimerA3Capture_Init(){
+void TimerA3Capture_Init()
+{
     // write this for Lab 16
     P10->SEL0 |= 0x30;      //set SEL0 of P10.4 and P10.5 to 1      ==> SEL = 01
     P10->SEL1 &= ~0x30;     //set SEL1 of P10.4 and P10.5 to 0
@@ -138,42 +138,36 @@ void TimerA3Capture_Init(){
     TIMER_A3->CCTL[0] = 0x4910; //bit 0 and bit 4 set by 10.4
     TIMER_A3->CCTL[1] = 0x4910; //bit 0 and bit 4 set by 10.5
     TIMER_A3->EX0 &= ~0x0007;       // configure for input clock divider /1
-    NVIC->IP[4] = (NVIC->IP[4]&0xFFFFFF00)|0x00000040; // priority 2
+    NVIC->IP[4] = (NVIC->IP[4] & 0xFFFFFF00) | 0x00000040; // priority 2
     NVIC->ISER[0] |= 0x0000C000;     // set pin 15 and 14
-    TIMER_A3->CTL |= 0x0024;        // reset and start Timer A3 in continuous up mode
+    TIMER_A3->CTL |= 0x0024;   // reset and start Timer A3 in continuous up mode
 }
 
-
-void TA3_0_IRQHandler(void){
-    TIMER_A3->CCTL[0] &= ~0x0001;             // acknowledge capture/compare interrupt 0
+void TA3_0_IRQHandler(void)
+{
+    TIMER_A3->CCTL[0] &= ~0x0001;     // acknowledge capture/compare interrupt 0
     right_counter++;
 
 }
 
-void TA3_N_IRQHandler(void){
-    TIMER_A3->CCTL[1] &= ~0x0001;             // acknowledge capture/compare interrupt 0
-    left_counter ++;
+void TA3_N_IRQHandler(void)
+{
+    TIMER_A3->CCTL[1] &= ~0x0001;     // acknowledge capture/compare interrupt 0
+    left_counter++;
 }
 
-
-
-
-
-
-
-
-
-void Init_Bumper_Switches(void) {
+void Init_Bumper_Switches(void)
+{
 
     P4->SEL0 &= ~0xED; // GPIO
     P4->SEL1 &= ~0xED; // GPIO
-    P4->DIR  &= ~0xED; // Direction is input
+    P4->DIR &= ~0xED; // Direction is input
     P4->OUT |= 0xED;
     P4->REN |= 0xED;
     P4->IFG &= ~0xED;
     P4->IES |= 0xED;
-    P4->IE  |= 0xED;
-    NVIC->IP[8] = (NVIC->IP[8]&0x00FFFFFF)|0x40000000; // priority 2
+    P4->IE |= 0xED;
+    NVIC->IP[8] = (NVIC->IP[8] & 0x00FFFFFF) | 0x40000000; // priority 2
     NVIC->ISER[1] |= 0x00000040; // Enable 38
     // 35 was ISER[1] = 0x00000008;  // 00000000000001000
     // 40 was ISER[1] = 0x00000100;  // 00000000100000000
@@ -183,9 +177,11 @@ void Init_Bumper_Switches(void) {
 
 volatile unsigned char stage = 0;
 
-void PORT4_IRQHandler(void) {
-      // This is the IRQ for Port 4 which contains the bumper switches
-    if (P4->IFG & 0x0ED) {
+void PORT4_IRQHandler(void)
+{
+    // This is the IRQ for Port 4 which contains the bumper switches
+    if (P4->IFG & 0x0ED)
+    {
         P4->IFG &= ~0xED;
         // This means that a bumper switch was pressed
         stage = 100;
@@ -193,10 +189,8 @@ void PORT4_IRQHandler(void) {
     }
 }
 
-
 #define MOVING_SPEED 2000
 #define UNIT_PER_ROTATION 9.45
-
 
 int main(void)
 {        // Main State Machine
@@ -223,9 +217,12 @@ int main(void)
 
     float north_angle_atan;
 
+    float circle_angle;
+    float num_of_circle_ticks;
+
     char facing_N = 0;
     char facing_E = 0;
-
+    char na_turn_R = 0;
     int currentRightSpeed = 0;
     int currentLeftSpeed = 0;
     int rightEncoderCutoffVal = 100;
@@ -246,16 +243,16 @@ int main(void)
     Init_Bumper_Switches();
     TimerA3Capture_Init();
 
-
-    /// JUST FOR TESTING DELETE THIS!!!!!!!
-    //stage = 13;
-    //howManyToMoveStraight = 30;
+    /// JUST FOR TESTING DELETE THIS!!!!!!!                             // BREAKING SCRIPT JUST FOR TESTING
+    //stage = 20;
+    //howManyToMoveStraight = 50;
 
     while (1)
     {
         switch (stage)
         {
-        case 100: {
+        case 100:
+        {
             Motor_Stop(); // Stay in this state forever
             // Turn the LED red to show that it hit something with the bumper switch
             break;
@@ -287,6 +284,7 @@ int main(void)
             num_of_cor++;
             if (num_of_cor >= 8)
             {
+                UART1_OutChar('1');
                 timer_set = 0;
                 stage++;
             }
@@ -294,6 +292,7 @@ int main(void)
         }
         case 2:                     //Averaging
         {
+
             float x_sum = 0;
             float y_sum = 0;
             for (int i = 0; i < 8; i++)
@@ -307,6 +306,7 @@ int main(void)
             // Now, initial_x_cor and initial_y_cor have the initial coordinate.
 
             stage++;                        //Go ahead and move forward
+            UART1_OutChar('2');
             currentRightSpeed = MOVING_SPEED;
             currentLeftSpeed = MOVING_SPEED;
             right_counter = 0;
@@ -320,36 +320,37 @@ int main(void)
         case 3:               // Move forward
         {
 
-
-
             // Code for going straight
-            if (right_counter == rightEncoderCutoffVal) {
+            if (right_counter == rightEncoderCutoffVal)
+            {
                 currentRightSpeed = 0;
                 leftEncoderCutoffVal++;
                 right_counter++;
 
             }
-            if (left_counter == leftEncoderCutoffVal) {
+            if (left_counter == leftEncoderCutoffVal)
+            {
                 currentLeftSpeed = 0;
                 rightEncoderCutoffVal++;
                 left_counter++;
             }
-            if (right_counter >= rightEncoderCutoffVal && left_counter >= leftEncoderCutoffVal)
+            if (right_counter >= rightEncoderCutoffVal
+                    && left_counter >= leftEncoderCutoffVal)
             {
                 left_counter = 0;
                 right_counter = 0;
                 currentRightSpeed = MOVING_SPEED;
                 currentLeftSpeed = MOVING_SPEED;
 
-                if (movingForwardCounter++ > 6) {
+                if (movingForwardCounter++ > 6)
+                {
+                    UART1_OutChar('3');
                     stage++;
                     timer_set = 0;
                     Motor_Stop();
                 }
             }
             // End of code to go straight
-
-
 
             Motor_Forward(currentLeftSpeed, currentRightSpeed);
 
@@ -367,6 +368,7 @@ int main(void)
             num_of_cor = 0;
             if (timerDone)
             {
+                UART1_OutChar('4');
                 stage++;
                 timer_set = 0;
             }
@@ -375,6 +377,7 @@ int main(void)
 
         case 5:               // Get  second coordinates
         {
+
             RxPutI = 0;
             RxGetI = 0;
             UART1_InString(string, 19); //IMPORTANT: message separate with space " ", end with CR "\r"
@@ -386,6 +389,7 @@ int main(void)
             if (num_of_cor >= 8)
             {
                 timer_set = 0;
+                UART1_OutChar('5');
                 stage++;
             }
             break;
@@ -402,6 +406,7 @@ int main(void)
             }
             current_x_cor = x_sum / 8;
             current_y_cor = y_sum / 8;
+            UART1_OutChar('6');
             stage++;                        //go back and move motors
 
             break;
@@ -419,41 +424,45 @@ int main(void)
             {
                 north_angle_atan = 90
                         + atan(change_y / change_x) * 180 / 3.14159;
-                //north_angle_atan2 = 90 +atan2(change_y,change_x)*180/3.14159;
+
             }
             else if (going_up && !going_right)
             {
                 north_angle_atan = 270
                         + atan(change_y / change_x) * 180 / 3.14159;
-                //north_angle_atan2 = 270 + atan2(change_y,change_x)*180/3.14159;
 
             }
             else if (!going_up && going_right)
             {
                 north_angle_atan = 90
                         + atan(change_y / change_x) * 180 / 3.14159;
-                //north_angle_atan2 =90 + atan2(change_y,change_x)*180/3.14159;
 
             }
             else if (!going_up && !going_right)
             {
                 north_angle_atan = 270
                         + atan(change_y / change_x) * 180 / 3.14159;
-                //north_angle_atan2 =  270  + atan2(change_y,change_x)*180/3.14159;
+
             }
             else
             {
                 // This is really bad
                 int n_a;
             }
-
+            UART1_OutChar('7');
             stage++;
             timer_set = 0;
+            na_turn_R = 0;
+            if (north_angle_atan > 180)
+            {
+                north_angle_atan -= 180;
+                na_turn_R = 1;
+
+            }
             break;
         }
         case 8:   //Turn to north
         {
-
             if (!timer_set)
             {
                 timer_set = 1;
@@ -462,7 +471,8 @@ int main(void)
                 currentRightSpeed = 2000;
                 currentLeftSpeed = 2000;
 
-                turnToNorthEncoderCount = north_angle_atan*ONE_DEGREE_ENCODERS;
+                turnToNorthEncoderCount =
+                        north_angle_atan * ONE_DEGREE_ENCODERS;
             }
 
             // Code to turn by the specific number of degrees
@@ -474,11 +484,18 @@ int main(void)
             {
                 currentLeftSpeed = 0;
             }
-
-            Motor_Left(currentLeftSpeed, currentRightSpeed);
-
-            if (right_counter >= turnToNorthEncoderCount || left_counter >= turnToNorthEncoderCount)
+            if (na_turn_R)
             {
+                Motor_Right(currentLeftSpeed, currentRightSpeed);
+            }
+            else
+            {
+                Motor_Left(currentLeftSpeed, currentRightSpeed);
+            }
+            if (right_counter >= turnToNorthEncoderCount
+                    || left_counter >= turnToNorthEncoderCount)
+            {
+                UART1_OutChar('8');
                 Motor_Stop();
                 stage++;
                 timer_set = 0;
@@ -486,7 +503,6 @@ int main(void)
                 right_counter = 0;
             }
             // Code to turn by the specific number of degrees
-
 
             break;
         }
@@ -500,32 +516,35 @@ int main(void)
             }
             if (timerDone)
             {
+                UART1_OutChar('9');
                 timer_set = 0;
                 stage++;
             }
             break;
         }
 
-
         case 10: // y_Decision:
         {
+
             if (current_y_cor - desir_y_cor > 0.1)
             {
-              //stage = MoveForward;                           // keep moving forward
-                howManyToMoveStraight = (current_y_cor - desir_y_cor)*UNIT_PER_ROTATION;
+                //stage = MoveForward;                           // keep moving forward
+                howManyToMoveStraight = (current_y_cor - desir_y_cor)
+                        * UNIT_PER_ROTATION;
                 movingForward = 1;
             }
             else if (desir_y_cor - current_y_cor > 0.1)
             {
                 //stage = MoveBackward;
                 movingForward = 0;
-                howManyToMoveStraight = (desir_y_cor - current_y_cor)*UNIT_PER_ROTATION;
+                howManyToMoveStraight = (desir_y_cor - current_y_cor)
+                        * UNIT_PER_ROTATION;
             }
             else
             {
                 stage++; // This basically means it will skip the "Move in Y axis" state
             }
-
+            UART1_OutChar('10');
             stage++;
             timer_set = 0;
 
@@ -534,7 +553,8 @@ int main(void)
 
         case 11: // Move in Y axis
         {
-            if (!timer_set) {
+            if (!timer_set)
+            {
                 timer_set = 1;
 
                 // Initialize
@@ -560,7 +580,8 @@ int main(void)
                 rightEncoderCutoffVal++;
                 left_counter++;
             }
-            if (right_counter >= rightEncoderCutoffVal && left_counter >= leftEncoderCutoffVal)
+            if (right_counter >= rightEncoderCutoffVal
+                    && left_counter >= leftEncoderCutoffVal)
             {
                 left_counter = 0;
                 right_counter = 0;
@@ -569,6 +590,7 @@ int main(void)
 
                 if (movingForwardCounter++ >= howManyToMoveStraight)
                 {
+                    UART1_OutChar('11');
                     stage++;
                     timer_set = 0;
                     Motor_Stop();
@@ -576,9 +598,12 @@ int main(void)
             }
             // End of code to go straight
 
-            if (movingForward) {
+            if (movingForward)
+            {
                 Motor_Forward(currentLeftSpeed, currentRightSpeed);
-            } else {
+            }
+            else
+            {
                 Motor_Backward(currentLeftSpeed, currentRightSpeed);
             }
 
@@ -587,6 +612,7 @@ int main(void)
 
         case 12: // Delay for one second
         {
+
             if (!timer_set)
             {
                 TimerA2_Init(&Timer_Done, 512); //wait for 30s to start up
@@ -595,14 +621,17 @@ int main(void)
             }
             if (timerDone)
             {
+                UART1_OutChar('12');
                 timer_set = 0;
                 stage++;
             }
             break;
         }
-        case 13: //FaceEast:
+        case 13: //FaceWest:
         {
-            if (!timer_set) {
+
+            if (!timer_set)
+            {
                 timer_set = 1;
                 right_counter = 0;
                 left_counter = 0;
@@ -620,15 +649,17 @@ int main(void)
                 currentLeftSpeed = 0;
             }
 
-            Motor_Right(currentLeftSpeed, currentRightSpeed);
+            Motor_Left(currentLeftSpeed, currentRightSpeed);
 
-            if (right_counter >= NINETY_TURN_ENCODERS && left_counter >= NINETY_TURN_ENCODERS)
+            if (right_counter >= NINETY_TURN_ENCODERS
+                    && left_counter >= NINETY_TURN_ENCODERS)
             {
                 timer_set = 0;
                 left_counter = 0;
                 right_counter = 0;
                 stage++;
                 Motor_Stop();
+                UART1_OutChar('13');
             }
             // End of code to turn ninety degrees
             break;
@@ -636,20 +667,25 @@ int main(void)
 
         case 14: // X decision now updated for encoder values
         {
-            if (current_x_cor - desir_x_cor > 0.1) {    // need to move backwards
-               movingForward = 0;
-               howManyToMoveStraight = (current_x_cor - desir_x_cor)*UNIT_PER_ROTATION;
+
+            if (desir_x_cor - current_x_cor > 0.1)
+            {    // need to move backwards
+                movingForward = 0;
+                howManyToMoveStraight = (desir_x_cor - current_x_cor)
+                        * UNIT_PER_ROTATION;
             }
-            else if (desir_x_cor - current_x_cor > 0.1)
+            else if (current_x_cor - desir_x_cor > 0.1)
             {
                 // Need to move forwards
                 movingForward = 1;
-                howManyToMoveStraight = (desir_x_cor - current_x_cor)*UNIT_PER_ROTATION;
+                howManyToMoveStraight = (current_x_cor - desir_x_cor)
+                        * UNIT_PER_ROTATION;
             }
             else
             {
                 stage++;
             }
+            UART1_OutChar('14');
             stage++;
             timer_set = 0;
             break;
@@ -695,6 +731,7 @@ int main(void)
 
                 if (movingForwardCounter++ >= howManyToMoveStraight)
                 {
+                    UART1_OutChar('15');
                     stage++;
                     timer_set = 0;
                     Motor_Stop();
@@ -714,12 +751,161 @@ int main(void)
             break;
         }
 
-
-        case 16: //SendA:            // Where receives commands from esp32
+        case 16: //Send A:            // Where receives commands from esp32
         {
             Motor_Stop();
             UART1_OutChar('A');
-            stage = 0;
+            stage++;       // This is different now that we're making the shapes
+            break;
+        }
+        case 17:    // Wait for and receive orientation and how long to go in circle
+        {
+
+            // "C\r 90 40"
+            RxPutI = 0;
+            RxGetI = 0;
+            Motor_Stop();
+            UART1_InString(string, 19); //IMPORTANT: message separate with space " ", end with CR "\r"
+            if (string[0] == 'C')
+            {
+                UART1_InString(string, 19);
+                circle_angle = strtof(string, &pend);
+                num_of_circle_ticks = strtof(pend, NULL);
+                stage++;
+            }
+            break;
+        }
+        case 18:    // Figure out what angle to turn and store it in north_angle_atan
+        {
+            // Code for spinning to face orientation
+            // Move to face in "circle_angle" direction
+            // We are currently facing West
+
+            if (circle_angle > 270) { // Need to turn right by less than 90 degrees
+                na_turn_R = 1;
+                north_angle_atan = circle_angle - 270;
+            }
+            else if (circle_angle < 90) { // Need to turn to the right by more than 90 degrees but less than 180 degrees
+                na_turn_R = 1;
+                north_angle_atan = circle_angle + 90;
+            }
+            else { // Need to turn to the left by 0-180 degrees
+                na_turn_R = 0;
+                north_angle_atan = 270 - circle_angle;
+            }
+            stage++;
+            timer_set = 0;
+            break;
+        }
+        case 19: // Turn to face into desired angle
+        {
+            if (!timer_set)
+            {
+                timer_set = 1;
+                right_counter = 0;
+                left_counter = 0;
+                currentRightSpeed = 2000;
+                currentLeftSpeed = 2000;
+
+                turnToNorthEncoderCount = north_angle_atan * ONE_DEGREE_ENCODERS;
+            }
+
+            // Code to turn by the specific number of degrees
+            if (right_counter == turnToNorthEncoderCount)
+            {
+                currentRightSpeed = 0;
+            }
+            if (left_counter == turnToNorthEncoderCount)
+            {
+                currentLeftSpeed = 0;
+            }
+            if (na_turn_R)
+            {
+                Motor_Right(currentLeftSpeed, currentRightSpeed);
+            }
+            else
+            {
+                Motor_Left(currentLeftSpeed, currentRightSpeed);
+            }
+            if (right_counter >= turnToNorthEncoderCount
+                    || left_counter >= turnToNorthEncoderCount)
+            {
+                UART1_OutChar('8');
+                Motor_Stop();
+                stage++;
+                timer_set = 0;
+                left_counter = 0;
+                right_counter = 0;
+            }
+            // Code to turn by the specific number of degrees
+            break;
+        }
+        case 20:    // Wait for "Go" from ground control station
+        {
+            // "S" for start and shape
+            Motor_Stop();
+            UART1_InString(string, 19); //IMPORTANT: message separate with space " ", end with CR "\r"
+            if (string[0] == 'S')
+            {
+                timer_set = 0;
+                stage++;
+            }
+            break;
+        }
+        case 21:    // Turn in a circle for num_of_circle_ticks steps
+        {
+            if (!timer_set)
+            {
+                timer_set = 1;
+
+                // Initialize
+                currentRightSpeed = 2000;
+                currentLeftSpeed = 2680;
+                right_counter = 0;
+                left_counter = 0;
+                rightEncoderCutoffVal = 100;
+                leftEncoderCutoffVal = 132;
+                movingForwardCounter = 0; // How many 1/4 turns it has gone forward.
+            }
+
+            // Code for going in a circle
+            if (right_counter == rightEncoderCutoffVal)
+            {
+                currentRightSpeed = 0;
+                leftEncoderCutoffVal++;
+                right_counter++;
+            }
+            if (left_counter == leftEncoderCutoffVal)
+            {
+                currentLeftSpeed = 0;
+                rightEncoderCutoffVal++;
+                left_counter++;
+            }
+            if (right_counter >= rightEncoderCutoffVal
+                    && left_counter >= leftEncoderCutoffVal)
+            {
+                left_counter = 0;
+                right_counter = 0;
+                currentRightSpeed = 2000;
+                currentLeftSpeed = 2680;
+
+                if (movingForwardCounter++ >= num_of_circle_ticks)
+                {
+                    stage++;
+                    timer_set = 0;
+                    Motor_Stop();
+                }
+            }
+            // End of code to go straight
+
+
+            Motor_Forward(currentLeftSpeed, currentRightSpeed);
+            break;
+
+        }
+        case 22:
+        {
+            Motor_Stop();
             break;
         }
 
