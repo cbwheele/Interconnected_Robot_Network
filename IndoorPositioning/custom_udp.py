@@ -5,22 +5,25 @@ import socket
 import json
 
 
-UDP_IP = "10.154.40.99" # You have to manually set your IP address here unfortunately
+UDP_IP = "10.154.50.230" # You have to manually set your IP address here unfortunately
 
 
 # This function reads in the data over udp and if it starts with the "Read" or "In position at" it returns a special flag isRea
 #     Otherwise, it will parse the json and return the list of the info of the tags it received
 def read_data():   
-    isReady = False
+    speicalCommand = 0
     line = data.recv(1024).decode('UTF-8')
 
     uwb_list = []
 
     if line.startswith('Ready'):
-        isReady = True
+        speicalCommand = 1
     
     if line.startswith('In position at'):
-        isReady = True
+        speicalCommand = 2
+        
+    if line.startswith('Drive me manually'):
+        speicalCommand = 3
         
     try:
         uwb_data = json.loads(line)
@@ -35,7 +38,7 @@ def read_data():
         print(line)
     print("")
 
-    return uwb_list, isReady
+    return uwb_list, speicalCommand
 
 
 UDP_PORT = 80
@@ -61,8 +64,8 @@ state = 0
 
 while True:
     if state == 0: # Wait for "Ready" from the ESP32
-        _unused, isReady = read_data()
-        if (isReady):
+        _unused, specialCommand = read_data()
+        if (specialCommand == 1):
             print("Just received ready from the device!!")
             state = 1
             
@@ -79,11 +82,14 @@ while True:
         print("Just sent message over UDP out that says to go to the location")
         state = 3
         
-    elif state == 3: # Wait for "In position" message from ESP32
-        _unused, isReady = read_data()
-        if (isReady):
+    elif state == 3: # Wait for "In position" message from ESP32 or "drive me manually"
+        _unused, specialCommand = read_data()
+        if (specialCommand == 2):
             print("The robot is now in the correct position!!")
             state = 4 # Start back over at the beginning to read in the coordinates
+        elif (specialCommand == 3):
+            print("Should now control the robot manually")
+            state = 7
             
     elif state == 4: # Get input from user for where to turn and how far to turn in a circle and send that info ("C090:040") to the ESP32
         circle_angle = input("Input circle angle (3 digits): ")
@@ -107,9 +113,15 @@ while True:
         print("\nThank you for using the IRN Swarm demo!!")
         state = 6
         pass
-    elif state == 6:
+    elif state == 6: 
         
         # Loop forever because we don't want to do anything else.
+        pass
+    elif state == 7: # Drive the robot manually
+        drive_char = input("w, a, s, d, ' ', or p: ")
+        outgoingSock.sendto(bytes(drive_char, "utf-8"), (addr[0], UDP_PORT))
+        if (drive_char == 'p'):
+            state = 4
         pass
 
 
