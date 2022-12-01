@@ -35,7 +35,7 @@ HardwareSerial SerialPort(2); // This is the serial port to the MSP432. It is de
 
 
 // IP address of host, which is currently the computer ground control station:
-const char *host = "10.154.50.230";
+const char *host = "10.154.43.186";
 // Caleb: 10.154.50.230
 // Brandon: 10.154.1.148
 
