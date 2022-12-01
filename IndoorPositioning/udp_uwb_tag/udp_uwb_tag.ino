@@ -8,6 +8,7 @@
 using namespace std;
 
 
+
 #define NUM_OF_TIMES_TO_AUTO_LOC (1)
 
 // Defines for the connections to the DWM100. These are constant on the Makerfabs board
@@ -178,6 +179,14 @@ int numOfTimesAuto = 0;
 
 
 
+
+int circleOnlyOrRegular = READ_TARGET_COORDINATES; // Normal: READ_TARGET_COORDINATES.  Circle only: RECEIVE_CIRCLE_DIRECTION_AND_DURATION
+
+
+
+
+
+
 // State machine
 void loopStateMachine() {
     switch (state) {
@@ -202,7 +211,7 @@ void loopStateMachine() {
                 readyAtStr += firstReadingCoordinates.y;
                 send_udp(&readyAtStr); // Send it on to the ground control station
 
-                state = READ_TARGET_COORDINATES; // Move on to next state
+                state = circleOnlyOrRegular;
             }
             break;
 

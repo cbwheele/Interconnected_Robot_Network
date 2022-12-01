@@ -7,6 +7,9 @@ import json
 readyCheck = [0,0,0]
 
 
+circleOnlyOrRegular = 2                # This should be 2 if regular, 4 if circle only
+
+
 UDP_IP = "10.154.43.186" # You have to manually set your IP address here unfortunately
 
 
@@ -140,6 +143,7 @@ outgoingSock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # This creates a
 
 
 
+
 state = 0
 stateOneCheck = 0
 
@@ -153,15 +157,15 @@ while True:
         if stateOneCheck == 0:
             addr = addr1[0]
             stateOneCheck = 1
-            state = 2
+            state = circleOnlyOrRegular
         elif stateOneCheck == 1:
             addr = addr2[0]
             stateOneCheck = 2
-            state = 2
+            state = circleOnlyOrRegular
         elif stateOneCheck == 2:
             addr = addr3[0]
             stateOneCheck = 3
-            state = 2
+            state = circleOnlyOrRegular
         elif stateOneCheck == 3:
             state = 5                           # Change this to be the correct version
             
