@@ -4,63 +4,87 @@
 import socket
 import json
 
+readyCheck = [0,0,0]
+
 
 UDP_IP = "10.154.43.186" # You have to manually set your IP address here unfortunately
 
 
 # This function reads in the data over udp and if it starts with the "Read" or "In position at" it returns a special flag isRea
 #     Otherwise, it will parse the json and return the list of the info of the tags it received
-def read_data():   
-    speicalCommand = 0
+def check_if_ready():   
+    
     #print("At top of read_data function")
     try:
-        msg1 = data1.recv(4096)
+        msg1 = data1.recv(4096).decode()
         print("Message on 1: ", msg1)
+        if "Ready" in msg1:
+            readyCheck[0] = 1
     except BlockingIOError as e:
         #print("Blocking error on message 1: ", e)
         pass
-    finally:
-        pass
     try:
-        msg2 = data2.recv(4096)
+        msg2 = data2.recv(4096).decode()
         print("Message on 2: ", msg2)
+        if "Ready" in msg2:
+            readyCheck[1] = 1
     except BlockingIOError as e:
         #print("Blocking error on message 2: ", e)
         pass
-    #msg3 = data3.recv(4096)
-    #print("Message on 3: ", msg3)
+    try:
+        msg3 = data3.recv(4096).decode()
+        print("Message on 3: ", msg3)
+        if "Ready" in msg3:
+            readyCheck[2] = 1
+    except BlockingIOError as e:
+        #print("Blocking error on message 3: ", e)
+        pass
+    
+    allReady = 1
+    for x in readyCheck:
+        if x == 0: 
+            allReady = 0
+            break
+            
+    return allReady
 
     
     
     
     
-    # line = data.recv(1024).decode('UTF-8')
+# Function read_data needs to return a special command to see what it was that was received from any of the 
 
-    # uwb_list = []
 
-    # if line.startswith('Ready'):
-    #     speicalCommand = 1
+def read_data():
+    returnCommand = 0
     
-    # if line.startswith('In position at'):
-    #     speicalCommand = 2
+    lineIsValid = False
+    try:
+        line = data1.recv(4096).decode()
+        lineIsValid = True
+    except BlockingIOError as e:
+        try:
+            line = data2.recv(4096).decode()
+            lineIsValid = True
+        except BlockingIOError as e:
+                try:
+                    line = data3.recv(4096).decode()
+                    lineIsValid = True
+                except BlockingIOError as e:
+                    pass
+    
+    if lineIsValid:
+        print("Data inside read_data:", line)
+        if "In position at" in line:
+            returnCommand = 2
         
-    # if line.startswith('Drive me manually'):
-    #     speicalCommand = 3
+        if "Drive me manually" in line:
+            returnCommand = 3
         
-    # try:
-    #     uwb_data = json.loads(line)
-    #     print(uwb_data)
+    else:
+        returnCommand = 0 # This line is uncessary but shows that should happen
         
-
-    #     uwb_list = uwb_data["links"]
-    #     for uwb_archor in uwb_list:
-    #         print(uwb_archor)
-        
-    # except:
-    #     print(line)
-    # print("")
-
-    # return uwb_list, speicalCommand
+    return returnCommand
 
 
 UDP_PORT = 80
@@ -72,15 +96,19 @@ sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 sock.bind((UDP_IP, UDP_PORT))
 print("After bind")  
 
-sock.listen(2)  # The number of connections received
+sock.listen(3)  # The number of connections received
 print("About to accept connection")
 data1, addr1 = sock.accept()
+print("Just accepted one")
 data2, addr2 = sock.accept()
-#data3, addr3 = sock.accept()
+print("Just accepted two")
+data3, addr3 = sock.accept()
+print("Just accepted three")
 
 sock.setblocking(False) # Set the socket to nonblocking!
 data1.setblocking(False)
 data2.setblocking(False)
+data3.setblocking(False)
 
 
 print("Data1", data1) # This is the data object that will receive the input of the UDP port connection just made
@@ -89,20 +117,14 @@ print("Addr1", addr1[0]) # This is the IP address you connected with
 print("Data2", data2) # This is the data object that will receive the input of the UDP port connection just made
 print("Addr2", addr2[0]) # This is the IP address you connected with
 
-#print("Data3", data2) # This is the data object that will receive the input of the UDP port connection just made
-#print("Addr3", addr2[0]) # This is the IP address you connected with
+print("Data3", data3) # This is the data object that will receive the input of the UDP port connection just made
+print("Addr3", addr3[0]) # This is the IP address you connected with
 
 
 
 
 outgoingSock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # This creates an outgoing UDP connection to that IP address so that you can send info back
 
-
-
-# State 0:
-#    wait for all ready
-#    have 1-4 and 7 /per esp32/
-#    Send "start" to all three
 
 
 
@@ -119,29 +141,44 @@ outgoingSock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # This creates a
 
 
 state = 0
+stateOneCheck = 0
 
 while True:
     if state == 0: # Wait for "Ready" from all of the esp32s
-        read_data()
-        #if (specialCommand == 1):
-        #    print("Just received ready from the device!!")
-        #    state = 1
+        allReady = check_if_ready()
+        if allReady == 1:
+            state = 1
             
-    elif state == 1: # Get the input for the x and y coordinates from user
+    elif state == 1:   # Figure out which ESP you're communicating, do them all in order, and then go to "Start all of them" movements
+        if stateOneCheck == 0:
+            addr = addr1[0]
+            stateOneCheck = 1
+            state = 2
+        elif stateOneCheck == 1:
+            addr = addr2[0]
+            stateOneCheck = 2
+            state = 2
+        elif stateOneCheck == 2:
+            addr = addr3[0]
+            stateOneCheck = 3
+            state = 2
+        elif stateOneCheck == 3:
+            state = 5                           # Change this to be the correct version
+            
+        
+    elif state == 2: # Send the message "GX.xx:Y.yy" to ESP32 and get input coordinates
         xCoord = input("Input X coordinate (X.xx): ")
         yCoord = input("Input Y coordinate (Y.yy): ")
-        state = 2
         
-    elif state == 2: # Send the message "GX.xx:Y.yy" to ESP32
         # Send "go to location" back to ESP32
         stringToESP32 = "M" + xCoord + ":" + yCoord
         print("About to send this to ESP32: ", stringToESP32)
-        outgoingSock.sendto(bytes(stringToESP32, "utf-8"), (addr[0], UDP_PORT))
+        outgoingSock.sendto(bytes(stringToESP32, "utf-8"), (addr, UDP_PORT))
         print("Just sent message over UDP out that says to go to the location")
         state = 3
         
     elif state == 3: # Wait for "In position" message from ESP32 or "drive me manually"
-        _unused, specialCommand = read_data()
+        specialCommand = read_data()
         if (specialCommand == 2):
             print("The robot is now in the correct position!!")
             state = 4 # Start back over at the beginning to read in the coordinates
@@ -156,31 +193,35 @@ while True:
         # Send "info for circle" back to ESP32
         stringToESP32 = "C" + circle_angle + ":" + num_ticks
         print("About to send this to ESP32: ", stringToESP32)
-        outgoingSock.sendto(bytes(stringToESP32, "utf-8"), (addr[0], UDP_PORT))
+        outgoingSock.sendto(bytes(stringToESP32, "utf-8"), (addr, UDP_PORT))
         print("Just sent message over UDP out about cricle information")
-        state = 5
+        state = 1
         pass
     
     elif state == 5: # Wait for user to click enter (or a message and click enter) and then send "S" to the ESP32
-        input("Click enter to go forward: ")
-        print("Will send S")
-        stringToESP32 = "S"
-        print("About to send this to ESP32: ", stringToESP32)
-        outgoingSock.sendto(bytes(stringToESP32, "utf-8"), (addr[0], UDP_PORT))
-        print("Send S to ESP32")
-        print("\nThank you for using the IRN Swarm demo!!")
-        state = 6
-        pass
+       input("Click enter for all of the robots to start the shape: ")
+       stringToESP32 = "S"
+       print("About to send this to ESP32: ", stringToESP32)
+       outgoingSock.sendto(bytes(stringToESP32, "utf-8"), (addr1[0], UDP_PORT))
+       outgoingSock.sendto(bytes(stringToESP32, "utf-8"), (addr2[0], UDP_PORT))
+       outgoingSock.sendto(bytes(stringToESP32, "utf-8"), (addr3[0], UDP_PORT))
+       print("Sent S to all ESP32s")
+       print("\nThank you for using the IRN Swarm demo!!")
+       state = 6
+       pass
+   
     elif state == 6: 
         
         # Loop forever because we don't want to do anything else.
         pass
+    
     elif state == 7: # Drive the robot manually
         drive_char = input("w, a, s, d, ' ', or p: ")
-        outgoingSock.sendto(bytes(drive_char, "utf-8"), (addr[0], UDP_PORT))
+        outgoingSock.sendto(bytes(drive_char, "utf-8"), (addr, UDP_PORT))
         if (drive_char == 'p'):
             state = 4
         pass
+        
 
 
 

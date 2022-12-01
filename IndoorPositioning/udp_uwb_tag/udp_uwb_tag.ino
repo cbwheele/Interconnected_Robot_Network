@@ -7,6 +7,9 @@
 
 using namespace std;
 
+
+#define NUM_OF_TIMES_TO_AUTO_LOC (1)
+
 // Defines for the connections to the DWM100. These are constant on the Makerfabs board
 #define SPI_SCK 18
 #define SPI_MISO 19
@@ -318,7 +321,7 @@ void loopStateMachine() {
                     digitalWrite(GRN_LED, HIGH);
                     numOfTimesAuto = 0; // Reset back to zero if we started another trial over again
                 } else {
-                    if (numOfTimesAuto++ >= 1) {
+                    if (++numOfTimesAuto >= NUM_OF_TIMES_TO_AUTO_LOC) {
                         state = CONTROL_VIA_WASD;
                         digitalWrite(RED_LED, HIGH);
                         digitalWrite(GRN_LED, HIGH);
