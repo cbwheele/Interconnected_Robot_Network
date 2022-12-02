@@ -6,8 +6,10 @@ import json
 
 readyCheck = [0,0,0]
 
-
-circleOnlyOrRegular = 4                # This should be 2 if regular, 4 if circle only
+# How to change for circle only or regular
+circleOnlyOrRegular = 2                
+# For regular: 2
+# For circle only: 4
 
 
 UDP_IP = "172.20.10.3" # You have to manually set your IP address here unfortunately
