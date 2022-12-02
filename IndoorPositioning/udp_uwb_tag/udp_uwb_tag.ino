@@ -9,7 +9,7 @@ using namespace std;
 
 
 
-#define NUM_OF_TIMES_TO_AUTO_LOC (1)
+#define NUM_OF_TIMES_TO_AUTO_LOC (2)
 
 // Defines for the connections to the DWM100. These are constant on the Makerfabs board
 #define SPI_SCK 18
@@ -28,8 +28,8 @@ using namespace std;
 #define MAX_ERROR_FROM_STARTING_COORDINATES 0.3 // This number specifies that the robots must be within 0.2 units in both the x and y directions of the initial shape coordinates to say "ready" to the ground control station
 
 // WiFi credentials:
-const char *ssid = "ncsu";
-const char *password = "";
+const char *ssid = "Caleb's iPhone";
+const char *password = "calebwheeler";
 // WiFi variables for sending and receiving data
 WiFiClient client;
 WiFiUDP Udp;
@@ -39,7 +39,7 @@ HardwareSerial SerialPort(2); // This is the serial port to the MSP432. It is de
 
 
 // IP address of host, which is currently the computer ground control station:
-const char *host = "10.154.43.186";
+const char *host = "172.20.10.3";
 // Caleb: 10.154.50.230
 // Brandon: 10.154.1.148
 
@@ -180,7 +180,9 @@ int numOfTimesAuto = 0;
 
 
 
-int circleOnlyOrRegular = READ_TARGET_COORDINATES; // Normal: READ_TARGET_COORDINATES.  Circle only: RECEIVE_CIRCLE_DIRECTION_AND_DURATION
+int circleOnlyOrRegular = READ_TARGET_COORDINATES; 
+// Normal: READ_TARGET_COORDINATES.  
+//Circle only: RECEIVE_CIRCLE_DIRECTION_AND_DURATION
 
 
 

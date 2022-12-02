@@ -7,10 +7,10 @@ import json
 readyCheck = [0,0,0]
 
 
-circleOnlyOrRegular = 2                # This should be 2 if regular, 4 if circle only
+circleOnlyOrRegular = 4                # This should be 2 if regular, 4 if circle only
 
 
-UDP_IP = "10.154.43.186" # You have to manually set your IP address here unfortunately
+UDP_IP = "172.20.10.3" # You have to manually set your IP address here unfortunately
 
 
 # This function reads in the data over udp and if it starts with the "Read" or "In position at" it returns a special flag isRea
