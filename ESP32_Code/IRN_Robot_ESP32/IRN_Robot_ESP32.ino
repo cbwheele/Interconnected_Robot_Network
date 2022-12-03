@@ -207,10 +207,6 @@ int numOfTimesAuto = 0;
 
 
 
-
-
-
-
 // State machine
 void loopStateMachine() {
     switch (state) {
@@ -225,8 +221,18 @@ void loopStateMachine() {
         case WAIT_FOR_NON_NULL_READINGS: 
             firstReadingCoordinates = getCoordinates(uwb_data); // Read in the current location
 
-            // Check if the coordinates are not zero or NAN
-            if (!(isnan(firstReadingCoordinates.x) || isnan(firstReadingCoordinates.y) || firstReadingCoordinates.x == 0 || firstReadingCoordinates.y == 0)) {
+            if (circleOnlyOrRegular == RECEIVE_CIRCLE_DIRECTION_AND_DURATION) {
+                // If only want to circle around, then send ready with the coordinates immediately
+                readyAtStr = "Ready: ";
+                readyAtStr += firstReadingCoordinates.x;
+                readyAtStr += ":";
+                readyAtStr += firstReadingCoordinates.y;
+                send_udp(&readyAtStr); // Send it on to the ground control station
+
+                state = circleOnlyOrRegular;
+            } 
+            // Check if the coordinates are non-null
+            else if (!(isnan(firstReadingCoordinates.x) || isnan(firstReadingCoordinates.y) || firstReadingCoordinates.x == 0 || firstReadingCoordinates.y == 0)) {
                 
                 // If the coordinates are good readings, then go ahead and send "Ready: 1.23:4.23" on to the ground control station
                 readyAtStr = "Ready: ";
