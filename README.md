@@ -22,4 +22,5 @@ High-level instructions for how to download/use the code (refer to individual fo
 - Turn on tag robots
 - Control using python script
 - Turn off all robots and put everything away
-- 
+
+We hope you enjoy using the Interconnected Robot Network!
