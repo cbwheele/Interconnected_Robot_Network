@@ -57,6 +57,7 @@ The full sequence is as follows:
   - Recieve how many circles encoder ticks to make
   - Move into initial orientation for shape
 - Move all robots around in shapes
+
 The "circling only" setup skips entering x and y cooridnates and the autonomously trying to find starting position portion of the code
 It just initializes the code to recieve circle orientation and number of circle encoder ticks and then when return or enter is pressed it has the robots execute the circle pre-programmed in at the same time 
 
