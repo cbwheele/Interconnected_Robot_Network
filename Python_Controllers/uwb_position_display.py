@@ -4,15 +4,17 @@ import cmath
 import socket
 import json
 
+# CHANGE THIS TO BE YOUR OWN IP ADDRESS!!!
+IP_ADDRESS = "10.154.51.2" # Change this IP address with no extra spaces and include periods as shown!
+
 hostname = socket.gethostname()
 print("Hostname: ", hostname)
-UDP_IP = "10.154.51.2"
-print("***Local ip:" + str(UDP_IP) + "***")
+print("***Local ip:" + str(IP_ADDRESS) + "***")
 UDP_PORT = 80
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 print("After socket")
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-sock.bind((UDP_IP, UDP_PORT))
+sock.bind((IP_ADDRESS, UDP_PORT))
 
 print("After bind")
 sock.listen(1)  # The number of connections received
