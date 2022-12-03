@@ -1,7 +1,21 @@
 #include <SPI.h>
 #include "DW1000Ranging.h"
 
+
+
+// This is the only variable that has to be changed in this entire script/
+// Edit this variable, the anchor address, to have the first number either be 82 or 83
+// Do not change any of the rest of the number
+// The only two options are
+//  "82:17:5B:D5:A9:9A:E2:9C" for the anchor on the top left of the operating theatre
+//  "83:17:5B:D5:A9:9A:E2:9C" for the anchor on the top right of the operating theatre
 #define ANCHOR_ADD "83:17:5B:D5:A9:9A:E2:9C"
+
+
+
+
+
+// Do not modify any of the rest of this file, or the link.h or link.c files associated with this anchor project
 
 #define SPI_SCK 18
 #define SPI_MISO 19
