@@ -14,7 +14,7 @@ This folder contains three sub-folders, which contain code for:
 - Select "ESP32 Dev Module" from the Tools > Board drop-down menu
 - Micro-USB cable connected between computer and ESP32 
 - Make sure you correct the correct serial port from the Tools > Port drop-down menu *every single time* before flashing code 
-- If the code doesn't flash and just times out while "Connecting...___...___" then press and hold the "Flash" button on the ESP32 while downloading the code
+- If the code doesn't flash and just times out while "Connecting...\_\_\_...\_\_\_" then press and hold the "Flash" button on the ESP32 while downloading the code
 
 
 ## Anchor Code
@@ -38,12 +38,28 @@ This folder contains three sub-folders, which contain code for:
 ## IRN_Robot_ESP32 Code
 
 
-### Modify code to make it be fully sequence control or circling only
+### Modify code to make it follow full sequence control (autonomous initial positions) or circling only
 - Change the `circleOnlyOrRegular` variable to control if the ESP32 runs the entire shape sequence (aka gets to initial location as well), or only causes the robot to circle around in the circle:
 - For full processing and data control, change the value to `READ_TARGET_COORDINATES`
 - For moving in a circle only, change the value to `RECEIVE_CIRCLE_DIRECTION_AND_DURATION`
 - These details are outined in the code as well in comments surrounding the variable
 - This works by changing which state the state machine loops to after the modules boot up
+
+#### Difference between full sequence and circling only
+The full sequence is as follows:
+- All robots bootup
+- Then per robot: 
+  -  Enter x coordinate
+  -  Enter y coordinate
+  -  Move autonomously towards initial position given for number of autonomous attempts specicified
+        - If failed, then switch to manual control until "p" is sent
+  - Receive initial angle (orientation) to point in to start circle
+  - Recieve how many circles encoder ticks to make
+  - Move into initial orientation for shape
+- Move all robots around in shapes
+The "circling only" setup skips entering x and y cooridnates and the autonomously trying to find starting position portion of the code
+It just initializes the code to recieve circle orientation and number of circle encoder ticks and then when return or enter is pressed it has the robots execute the circle pre-programmed in at the same time 
+
 
 ### Modify NUM_OF_TIMES_TO_AUTO_LOC
 - Modify the `NUM_OF_TIMES_TO_AUTO_LOC` with now many times you want the robot to try to get to the initial starting location autonomously
