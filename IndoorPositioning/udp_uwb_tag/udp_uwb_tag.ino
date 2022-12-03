@@ -7,6 +7,10 @@
 
 using namespace std;
 
+
+
+#define NUM_OF_TIMES_TO_AUTO_LOC (2)
+
 // Defines for the connections to the DWM100. These are constant on the Makerfabs board
 #define SPI_SCK 18
 #define SPI_MISO 19
@@ -24,8 +28,8 @@ using namespace std;
 #define MAX_ERROR_FROM_STARTING_COORDINATES 0.3 // This number specifies that the robots must be within 0.2 units in both the x and y directions of the initial shape coordinates to say "ready" to the ground control station
 
 // WiFi credentials:
-const char *ssid = "ncsu";
-const char *password = "";
+const char *ssid = "Caleb's iPhone";
+const char *password = "calebwheeler";
 // WiFi variables for sending and receiving data
 WiFiClient client;
 WiFiUDP Udp;
@@ -35,8 +39,8 @@ HardwareSerial SerialPort(2); // This is the serial port to the MSP432. It is de
 
 
 // IP address of host, which is currently the computer ground control station:
-const char *host = "10.154.40.99";
-// Caleb: 10.154.40.99
+const char *host = "172.20.10.3";
+// Caleb: 10.154.50.230
 // Brandon: 10.154.1.148
 
 
@@ -157,6 +161,8 @@ int packetSize = 0;
 Coordinates shapeStartingLocationCoordinates = Coordinates();
 int timeSentGo;
 
+int numOfTimesAuto = 0;
+
 
 // State machine states
 #define WAIT_FOR_DWM_TO_BOOTUP      (0)
@@ -168,6 +174,18 @@ int timeSentGo;
 #define CHECK_IF_COORDS_ARE_GOOD    (6)
 #define SEND_ARRIVED_TO_COMPUTER    (7)
 #define WAIT_TO_START_SENDING_COORDINATES (8)
+#define CONTROL_VIA_WASD            (9)
+#define RECEIVE_CIRCLE_DIRECTION_AND_DURATION (15)
+
+
+
+
+int circleOnlyOrRegular = READ_TARGET_COORDINATES; 
+// Normal: READ_TARGET_COORDINATES.  
+//Circle only: RECEIVE_CIRCLE_DIRECTION_AND_DURATION
+
+
+
 
 
 
@@ -195,7 +213,7 @@ void loopStateMachine() {
                 readyAtStr += firstReadingCoordinates.y;
                 send_udp(&readyAtStr); // Send it on to the ground control station
 
-                state = READ_TARGET_COORDINATES; // Move on to next state
+                state = circleOnlyOrRegular;
             }
             break;
 
@@ -312,10 +330,21 @@ void loopStateMachine() {
                     state = SEND_ARRIVED_TO_COMPUTER;
                     Serial.println("Coordinates were good!");
                     digitalWrite(GRN_LED, HIGH);
+                    numOfTimesAuto = 0; // Reset back to zero if we started another trial over again
                 } else {
-                    state = SEND_TARGET_COORD_TO_MSP;
-                    Serial.println("Coordinates were bad, so re-sending new coordinates");
-                    digitalWrite(RED_LED, HIGH);
+                    if (++numOfTimesAuto >= NUM_OF_TIMES_TO_AUTO_LOC) {
+                        state = CONTROL_VIA_WASD;
+                        digitalWrite(RED_LED, HIGH);
+                        digitalWrite(GRN_LED, HIGH);
+                        // Say not arrived to host computer
+                        readyAtStr = "Drive me manually";             
+                        send_udp(&readyAtStr);
+                        SerialPort.print("M\r");
+                    } else {
+                        state = SEND_TARGET_COORD_TO_MSP;
+                        Serial.println("Coordinates were bad, so re-sending new coordinates");
+                        digitalWrite(RED_LED, HIGH);
+                    }
                 }
             }
             break;
@@ -327,7 +356,35 @@ void loopStateMachine() {
                 readyAtStr += ":";
                 readyAtStr += currentCoordinates.y;                
                 send_udp(&readyAtStr);
-                state = 15;
+                state = RECEIVE_CIRCLE_DIRECTION_AND_DURATION;
+            }
+            break;
+        case CONTROL_VIA_WASD:
+            {
+                // Control via the WASD received, and then go on to state RECEIVE_CIRCLE_DIRECTION_AND_DURATION
+                packetSize = Udp.parsePacket();
+
+                if (packetSize) {
+                    // read the packet into packetBufffer
+                    len = Udp.read(packetBuffer, 255);
+                    if (len > 0) {
+                        packetBuffer[len] = 0;
+                    }
+                    Serial.println("Contents:");
+                    Serial.println(packetBuffer);
+
+                    // packetBuffer should be of the form "w" "a" "s" "d" or " ". If it is "p" for "in position" then tell MSP432 and skip states
+                    if (packetBuffer[0] == 'p') {
+                        state = RECEIVE_CIRCLE_DIRECTION_AND_DURATION;
+                        digitalWrite(RED_LED, LOW);
+                    }
+
+                    // Send packetBuffer[0] over UART
+                    Serial.print("Just received the character: ");
+                    Serial.println(packetBuffer[0]);
+                    SerialPort.print(packetBuffer[0]);
+                    SerialPort.print('\r');
+                }
             }
             break;
         case 1000:
@@ -336,7 +393,7 @@ void loopStateMachine() {
                 state = WAIT_FOR_NON_NULL_READINGS;
             }
             break;
-        case 15:
+        case RECEIVE_CIRCLE_DIRECTION_AND_DURATION:
             // Read incoming message
             packetSize = Udp.parsePacket();
 
