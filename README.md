@@ -11,3 +11,15 @@ We had three main sections of code:
 - Code on the computer terminal written in Python to control the entire operation and communicate via WiFi with the ESP32s
 
 There are three different folders inside this repo for the code for each of these sections, and each folder contains a README file that outlines what the code does.
+
+High-level instructions for how to download/use the code (refer to individual folders for more specific instructions):
+- Change IP address on ESP32 Robot Code and Flash the code to all ESP32s put on robots using an Arduino IDE
+- Flash two ESP32s at the "anchors" with one IP addres starting with 82 and the other starting with 83
+- Flash all MSP432s with the code contained in the MSP432 folder using Code Composer Studio IDE
+- Place anchors 81" apart at the top of the operating theatre and turn on
+- Place all three tag robots in the center of the operating theatre
+- Start python script
+- Turn on tag robots
+- Control using python script
+- Turn off all robots and put everything away
+- 
