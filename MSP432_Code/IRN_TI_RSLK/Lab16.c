@@ -68,6 +68,12 @@ policies, either expressed or implied, of the FreeBSD Project.
 // Debug heartbeat connected to P2.0 (built-in red LED)
 // Debug heartbeat connected to P1.0 (built-in LED1)
 
+//===================================================
+// This is the Lab code and how we tried to solve it
+// This is not used for the swarm robot project
+// But you may learn from it
+// Senior Design Team, December 2022
+//===================================================
 #include <stdint.h>
 #include "msp.h"
 #include "Clock.h"

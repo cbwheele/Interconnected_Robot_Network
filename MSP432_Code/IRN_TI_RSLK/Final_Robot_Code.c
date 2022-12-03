@@ -1,69 +1,30 @@
-// GPIOmain.c
+// Final_Robot_Code.c
 // Runs on MSP432
-// Initialize four GPIO pins as outputs.  Continually generate output to
-// drive simulated stepper motor.
-// Daniel Valvano
-// September 23, 2017
+// Decemeber 1, 2022
+// This code allows the robot to drive to the coordinate input by user
+// and then turn to a given orientation input by user
+// and finally drive in a circle
 
-/* This example accompanies the book
- "Embedded Systems: Introduction to Robotics,
- Jonathan W. Valvano, ISBN: 9781074544300, copyright (c) 2019
- For more information about my classes, my research, and my books, see
- http://users.ece.utexas.edu/~valvano/
-
- Simplified BSD License (FreeBSD License)
- Copyright (c) 2019, Jonathan Valvano, All rights reserved.
-
- Redistribution and use in source and binary forms, with or without modification,
- are permitted provided that the following conditions are met:
-
- 1. Redistributions of source code must retain the above copyright notice,
- this list of conditions and the following disclaimer.
- 2. Redistributions in binary form must reproduce the above copyright notice,
- this list of conditions and the following disclaimer in the documentation
- and/or other materials provided with the distribution.
-
- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
- USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
- The views and conclusions contained in the software and documentation are
- those of the authors and should not be interpreted as representing official
- policies, either expressed or implied, of the FreeBSD Project.
- */
-
-// P4.3 is an output to LED3, negative logic
-// P4.2 is an output to LED2, negative logic
-// P4.1 is an output to LED1, negative logic
-// P4.0 is an output to LED0, negative logic
 #include <stdint.h>
 #include <stdlib.h> //added for reading in coordinates
 #include <stdio.h>  //added for reading in coordinates
 #include <math.h>   //added for reading in coordinates
-#include "msp.h"
-#include "Clock.h"
-#include "ports.h"
+#include "msp.h"    
+#include "Clock.h"  //added for timers
+#include "ports.h"  //initialize ports
 #include "./inc/TExaS.h"
-#include "./inc/Motor.h"
-#include "./inc/PWM.h"
-#include "./inc/TimerA2.h"
-#include "./inc/Tachometer.h"
-
+#include "./inc/Motor.h"    //To control motors
+#include "./inc/PWM.h"      //Use PWM functions
+#include "./inc/TimerA2.h"  //Using Timers
+#include "./inc/Tachometer.h"   //For Encoders
 #include "./inc/UART1.h"    //serial communication
 
-#define TIME2DIST 3072
-#define TIME2DEG 6          //was 5.972
-#define MOTOR_L_VAL 2000
+#define TIME2DIST 3072      //Factor of time required to travel 1 unit
+#define TIME2DEG 6          //Factor of time required to turn 1 degree
+#define MOTOR_L_VAL 2000    //Left Rigt motor ratio is 20:21, this values helps the motor to run fairly straight
 #define MOTOR_R_VAL 2100
 
-#define NINETY_TURN_ENCODERS 180
+#define NINETY_TURN_ENCODERS 180    
 #define ONE_DEGREE_ENCODERS 2
 
 volatile unsigned char timerDone = 0;
@@ -72,13 +33,6 @@ uint32_t RxGetI;      // should be 0 to SIZE-1
 float distance_to_travel = 0;
 float x_leg_of_tri = 0;
 
-void GPIO_Init(void)
-{
-    // initialize P4.3-P4.0 and make them outputs
-    P4->SEL0 &= ~0x0F;
-    P4->SEL1 &= ~0x0F;            // configure stepper motor/LED pins as GPIO
-    P4->DIR |= 0x0F;              // make stepper motor/LED pins out
-}
 
 void TA1_0_IRQHandler(void)
 {
@@ -93,14 +47,43 @@ void Timer_Done(void)
     timerDone = 1;
 }
 
-
+/*
+ // I could not get this to work on regular GPIO interrupts
+ // For some reason it appears that Port 10 may not have an interrupt vector?!
+ // Link to forum that says that: https://e2e.ti.com/support/microcontrollers/msp-low-power-microcontrollers-group/msp430/f/msp-low-power-microcontroller-forum/501845/msp432-gpio-interrupts
+ //
+ void Init_Tachometer(void) {
+ P10->SEL0 &= ~0x30; // 10.4 and 10.5 GPIO
+ P10->SEL1 &= ~0x30; // 10.4 and 10.5 GPIO
+ P10->DIR  &= ~0x30; // Direction is input
+ //P10->OUT |= 0x30;
+ //P10->REN |= 0x30;
+ P10->IFG &= ~0x30;
+ P10->IES |= 0x30;
+ P10->IE  |= 0x30;
+ //NVIC->IP[4] = (NVIC->IP[4]&0xFFFFFF00)|0x00000040; // priority 2
+ //NVIC->ISER[1] |= 0x00001000; // Enable port 10 interrupts which is 44?
+ NVIC->IP[4] = (NVIC->IP[4]&0xFFFFFF00)|0x00000040; // priority 2
+ NVIC->ISER[0] |= 0x0000C000;     // set pin 15 and 14
+ //MAP_GPIO_setAsInputPinWithPullUpResistor(GPIO_PORT_P10, GPIO_PIN3);
+ //MAP_GPIO_clearInterruptFlag(GPIO_PORT_P10, GPIO_PIN3);
+ }
+ void PORT10_IRQHandler(void) {
+ if (P10->IFG & 0x10) {
+ // Right?
+ }
+ if (P10->IFG & 0x20) {
+ // Left?
+ }
+ }
+ */
 
 volatile uint16_t left_counter = 0;
 volatile uint16_t right_counter = 0;
 
-void TimerA3Capture_Init()
+void TimerA3Capture_Init()  // Timer used for encoder interrupt
 {
-    // write this for Lab 16
+    // wrote this for Lab 16
     P10->SEL0 |= 0x30;      //set SEL0 of P10.4 and P10.5 to 1      ==> SEL = 01
     P10->SEL1 &= ~0x30;     //set SEL1 of P10.4 and P10.5 to 0
     P10->DIR &= ~0x30;      // make P10.4, P10.5 in
@@ -114,20 +97,20 @@ void TimerA3Capture_Init()
     TIMER_A3->CTL |= 0x0024;   // reset and start Timer A3 in continuous up mode
 }
 
-void TA3_0_IRQHandler(void)
+void TA3_0_IRQHandler(void)           // Set up Interrupt to count right motor encoder ticks
 {
     TIMER_A3->CCTL[0] &= ~0x0001;     // acknowledge capture/compare interrupt 0
     right_counter++;
 
 }
 
-void TA3_N_IRQHandler(void)
+void TA3_N_IRQHandler(void)           // Set up Interrupt to count left motor encoder ticks
 {
     TIMER_A3->CCTL[1] &= ~0x0001;     // acknowledge capture/compare interrupt 0
     left_counter++;
 }
 
-void Init_Bumper_Switches(void)
+void Init_Bumper_Switches(void)       // Initialize bumper switches configuration
 {
 
     P4->SEL0 &= ~0xED; // GPIO
@@ -207,11 +190,11 @@ int main(void)
 
     Clock_Init48MHz();  // makes SMCLK=12 MHz
     UART1_Initprintf(); // initialize UART and printf
-    PWM_Init34(15000, 0, 0);
-    Motor_Init();
-    Tachometer_Init();
+    PWM_Init34(15000, 0, 0);    //Set PWM Cycle
+    Motor_Init();       // Set GPIO ports for motor
+    Tachometer_Init();  // Initialize encoder
 
-    Init_Bumper_Switches();
+    Init_Bumper_Switches(); 
     TimerA3Capture_Init();
 
     /// JUST FOR TESTING DELETE THIS!!!!!!!                             // BREAKING SCRIPT JUST FOR TESTING
@@ -231,7 +214,7 @@ int main(void)
         case 0:                 //Receive desired location to go to
         {
             Motor_Stop();
-            RxGetI = 0;
+            RxGetI = 0;         // Clears RX ring buffer to filter unwanted data
             UART1_InString(string, 19); //IMPORTANT: message separate with space " ", end with CR "\r"
             if (string[0] == 'G')
             {
@@ -245,7 +228,7 @@ int main(void)
                 UART1_InString(string, 19);
                 circle_angle = strtof(string, &pend);
                 num_of_circle_ticks = strtof(pend, NULL);
-                stage = 18;                                                                // Jump this straight to 18 which is acting upon values received just here
+                stage = 18;                          // Jump this straight to 18 which is acting upon values received just here
             }
             else if (string[0] == 'M') {
                 stage = 17;                             // Go to the manual control state
@@ -253,7 +236,7 @@ int main(void)
             num_of_cor = 0;
             break;
         }
-        case 1:              //Get first location
+        case 1:              //Get first 8 location
         {
             //===============
             RxPutI = 0;
@@ -266,7 +249,6 @@ int main(void)
             num_of_cor++;
             if (num_of_cor >= 8)
             {
-                UART1_OutChar('1');
                 timer_set = 0;
                 stage++;
             }
@@ -288,12 +270,11 @@ int main(void)
             // Now, initial_x_cor and initial_y_cor have the initial coordinate.
 
             stage++;                        //Go ahead and move forward
-            UART1_OutChar('2');
             currentRightSpeed = MOVING_SPEED;
             currentLeftSpeed = MOVING_SPEED;
             right_counter = 0;
             left_counter = 0;
-            rightEncoderCutoffVal = 100;
+            rightEncoderCutoffVal = 100;    //Line up motors for every 100 encoder ticks
             leftEncoderCutoffVal = 100;
             movingForwardCounter = 0; // How many 1/4 turns it has gone forward.
             break;
@@ -326,7 +307,6 @@ int main(void)
 
                 if (movingForwardCounter++ > 6)
                 {
-                    UART1_OutChar('3');
                     stage++;
                     timer_set = 0;
                     Motor_Stop();
@@ -350,14 +330,13 @@ int main(void)
             num_of_cor = 0;
             if (timerDone)
             {
-                UART1_OutChar('4');
                 stage++;
                 timer_set = 0;
             }
             break;
         }
 
-        case 5:               // Get  second coordinates
+        case 5:               // Get  second coordinates (Get 8 values for averaging)
         {
 
             RxPutI = 0;
@@ -371,7 +350,6 @@ int main(void)
             if (num_of_cor >= 8)
             {
                 timer_set = 0;
-                UART1_OutChar('5');
                 stage++;
             }
             break;
@@ -388,13 +366,12 @@ int main(void)
             }
             current_x_cor = x_sum / 8;
             current_y_cor = y_sum / 8;
-            UART1_OutChar('6');
             stage++;                        //go back and move motors
 
             break;
         }
 
-        case 7:       //
+        case 7:       //Calculate the angle to turn north (facing the anchors)
         {
             float change_x = current_x_cor - initial_x_cor;
             float change_y = current_y_cor - initial_y_cor;
@@ -431,7 +408,6 @@ int main(void)
                 // This is really bad
                 int n_a;
             }
-            UART1_OutChar('7');
             stage++;
             timer_set = 0;
             na_turn_R = 0;
@@ -477,7 +453,6 @@ int main(void)
             if (right_counter >= turnToNorthEncoderCount
                     || left_counter >= turnToNorthEncoderCount)
             {
-                UART1_OutChar('8');
                 Motor_Stop();
                 stage++;
                 timer_set = 0;
@@ -498,14 +473,13 @@ int main(void)
             }
             if (timerDone)
             {
-                UART1_OutChar('9');
                 timer_set = 0;
                 stage++;
             }
             break;
         }
 
-        case 10: // y_Decision:
+        case 10: // y_Decision: decide to go forward or backward on y axis
         {
 
             if (current_y_cor - desir_y_cor > 0.1)
@@ -526,7 +500,6 @@ int main(void)
             {
                 stage++; // This basically means it will skip the "Move in Y axis" state
             }
-            UART1_OutChar('10');
             stage++;
             timer_set = 0;
 
@@ -572,7 +545,6 @@ int main(void)
 
                 if (movingForwardCounter++ >= howManyToMoveStraight)
                 {
-                    UART1_OutChar('11');
                     stage++;
                     timer_set = 0;
                     Motor_Stop();
@@ -603,7 +575,6 @@ int main(void)
             }
             if (timerDone)
             {
-                UART1_OutChar('12');
                 timer_set = 0;
                 stage++;
             }
@@ -641,13 +612,12 @@ int main(void)
                 right_counter = 0;
                 stage++;
                 Motor_Stop();
-                UART1_OutChar('13');
             }
             // End of code to turn ninety degrees
             break;
         }
 
-        case 14: // X decision now updated for encoder values
+        case 14: // X decision , decide to go forward or backward
         {
 
             if (desir_x_cor - current_x_cor > 0.1)
@@ -667,7 +637,6 @@ int main(void)
             {
                 stage++;
             }
-            UART1_OutChar('14');
             stage++;
             timer_set = 0;
             break;
@@ -713,7 +682,6 @@ int main(void)
 
                 if (movingForwardCounter++ >= howManyToMoveStraight)
                 {
-                    UART1_OutChar('15');
                     stage++;
                     timer_set = 0;
                     Motor_Stop();
@@ -772,7 +740,7 @@ int main(void)
 
             break;
         }
-        case 18:    // Figure out what angle to turn and store it in north_angle_atan
+        case 18:  
         {
             // Code for spinning to face orientation
             // Move to face in "circle_angle" direction
@@ -794,7 +762,7 @@ int main(void)
             timer_set = 0;
             break;
         }
-        case 19: // Turn to face into desired angle
+        case 19: // Turn to the direction where the robot is ready for driving in circle
         {
             if (!timer_set)
             {
@@ -827,7 +795,6 @@ int main(void)
             if (right_counter >= turnToNorthEncoderCount
                     || left_counter >= turnToNorthEncoderCount)
             {
-                UART1_OutChar('8');
                 Motor_Stop();
                 stage++;
                 timer_set = 0;

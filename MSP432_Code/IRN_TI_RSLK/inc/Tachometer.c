@@ -110,7 +110,7 @@ void Tachometer_Init(void){
   TimerA3Capture_Init01(&tachometerRightInt, &tachometerLeftInt);
 }
 
-// ------------Tachometer_Get------------
+// ------------Tachometer_Get------------   // Not very helpful (Senior Design Team, December 2022)
 // Get the most recent tachometer measurements.
 // Input: leftTach   is pointer to store last measured tachometer period of left wheel (units of 0.083 usec)
 //        leftDir    is pointer to store enumerated direction of last movement of left wheel
