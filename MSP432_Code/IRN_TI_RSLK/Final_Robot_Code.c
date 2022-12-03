@@ -93,36 +93,7 @@ void Timer_Done(void)
     timerDone = 1;
 }
 
-/*
- // I could not get this to work on regular GPIO interrupts
- // For some reason it appears that Port 10 may not have an interrupt vector?!
- // Link to forum that says that: https://e2e.ti.com/support/microcontrollers/msp-low-power-microcontrollers-group/msp430/f/msp-low-power-microcontroller-forum/501845/msp432-gpio-interrupts
- //
- void Init_Tachometer(void) {
- P10->SEL0 &= ~0x30; // 10.4 and 10.5 GPIO
- P10->SEL1 &= ~0x30; // 10.4 and 10.5 GPIO
- P10->DIR  &= ~0x30; // Direction is input
- //P10->OUT |= 0x30;
- //P10->REN |= 0x30;
- P10->IFG &= ~0x30;
- P10->IES |= 0x30;
- P10->IE  |= 0x30;
- //NVIC->IP[4] = (NVIC->IP[4]&0xFFFFFF00)|0x00000040; // priority 2
- //NVIC->ISER[1] |= 0x00001000; // Enable port 10 interrupts which is 44?
- NVIC->IP[4] = (NVIC->IP[4]&0xFFFFFF00)|0x00000040; // priority 2
- NVIC->ISER[0] |= 0x0000C000;     // set pin 15 and 14
- //MAP_GPIO_setAsInputPinWithPullUpResistor(GPIO_PORT_P10, GPIO_PIN3);
- //MAP_GPIO_clearInterruptFlag(GPIO_PORT_P10, GPIO_PIN3);
- }
- void PORT10_IRQHandler(void) {
- if (P10->IFG & 0x10) {
- // Right?
- }
- if (P10->IFG & 0x20) {
- // Left?
- }
- }
- */
+
 
 volatile uint16_t left_counter = 0;
 volatile uint16_t right_counter = 0;
