@@ -260,7 +260,6 @@ int main(void)
         case 0:                 //Receive desired location to go to
         {
             Motor_Stop();
-            RxPutI = 0; // Trying this out to see if it solves the problem
             RxGetI = 0;
             UART1_InString(string, 19); //IMPORTANT: message separate with space " ", end with CR "\r"
             if (string[0] == 'G')
