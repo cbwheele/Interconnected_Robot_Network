@@ -7,9 +7,54 @@
 
 using namespace std;
 
+// State machine states
+#define WAIT_FOR_DWM_TO_BOOTUP      (0)
+#define WAIT_FOR_NON_NULL_READINGS  (1)
+#define READ_TARGET_COORDINATES     (2)
+#define SEND_TARGET_COORD_TO_MSP    (3)
+#define WAIT_FOR_ARRIVED_FROM_MSP   (4)
+#define WAIT_NEW_POS_READ_SETTLE    (5)
+#define CHECK_IF_COORDS_ARE_GOOD    (6)
+#define SEND_ARRIVED_TO_COMPUTER    (7)
+#define WAIT_TO_START_SENDING_COORDINATES (8)
+#define CONTROL_VIA_WASD            (9)
+#define RECEIVE_CIRCLE_DIRECTION_AND_DURATION (15)
 
 
+
+/* Beginning of variables that need changing for proper script execution */
+
+
+// Change this variable to control if the ESP32 runs the entire shape sequence (aka gets to initial location as well), or only causes the robot to circle around in the circle:
+int circleOnlyOrRegular = READ_TARGET_COORDINATES;      // Modify this value to see what should be done with this script
+// For full processing and data control: READ_TARGET_COORDINATES.  
+// For moving in a circle only: RECEIVE_CIRCLE_DIRECTION_AND_DURATION
+
+
+// Modify this macro to see how many times the robot should try to get to the correct starting location autonomously before switching over to manual control
+// The reccomended number of times is 2 or 3, as it is not uncommon for the robot to converge to the correct location after 2 or 3 attempts, but usually after three if it hasn't made it yet it's unlikely to
 #define NUM_OF_TIMES_TO_AUTO_LOC (2)
+// The script has not been tested with this set to a value less than one
+// The value must also be a non-negative integer, so 1, 2, 3, etc.  
+
+
+// Modify these WiFi credentials for how it should connect to the WiFi network
+// This must be the same network as the controlling computer is connected to
+// Make sure to add the MAC address to the network preferences if that's needed for (especially school) WiFi networks
+// If there is no WiFi password necessary, then leave it as a blank string such as ""
+const char *ssid = "WiFi Network Name"; // Example "ncsu"
+const char *password = "wifipassword";  // Example "" because school WiFi and MAC address required but no password required
+
+
+// Modify this IP address variable to be the IP address of the controlling computer:
+const char *host = "172.20.10.3";  // . YOU MUST MANUALLY SET YOUR IP ADDRESS IN THIS STRING (no extra spaces on either end, and include periods as shown here)
+// Otherwise, the robot will not be able to connect up to the computer to be able to receive commands
+
+
+/* End of variables that need changing for proper script execution */
+
+
+
 
 // Defines for the connections to the DWM100. These are constant on the Makerfabs board
 #define SPI_SCK 18
@@ -27,9 +72,7 @@ using namespace std;
 // Other defines
 #define MAX_ERROR_FROM_STARTING_COORDINATES 0.3 // This number specifies that the robots must be within 0.2 units in both the x and y directions of the initial shape coordinates to say "ready" to the ground control station
 
-// WiFi credentials:
-const char *ssid = "Caleb's iPhone";
-const char *password = "calebwheeler";
+
 // WiFi variables for sending and receiving data
 WiFiClient client;
 WiFiUDP Udp;
@@ -38,10 +81,7 @@ WiFiUDP Udp;
 HardwareSerial SerialPort(2); // This is the serial port to the MSP432. It is defined as serial port 2
 
 
-// IP address of host, which is currently the computer ground control station:
-const char *host = "172.20.10.3";
-// Caleb: 10.154.50.230
-// Brandon: 10.154.1.148
+
 
 
 
@@ -164,25 +204,7 @@ int timeSentGo;
 int numOfTimesAuto = 0;
 
 
-// State machine states
-#define WAIT_FOR_DWM_TO_BOOTUP      (0)
-#define WAIT_FOR_NON_NULL_READINGS  (1)
-#define READ_TARGET_COORDINATES     (2)
-#define SEND_TARGET_COORD_TO_MSP    (3)
-#define WAIT_FOR_ARRIVED_FROM_MSP   (4)
-#define WAIT_NEW_POS_READ_SETTLE    (5)
-#define CHECK_IF_COORDS_ARE_GOOD    (6)
-#define SEND_ARRIVED_TO_COMPUTER    (7)
-#define WAIT_TO_START_SENDING_COORDINATES (8)
-#define CONTROL_VIA_WASD            (9)
-#define RECEIVE_CIRCLE_DIRECTION_AND_DURATION (15)
 
-
-
-
-int circleOnlyOrRegular = READ_TARGET_COORDINATES; 
-// Normal: READ_TARGET_COORDINATES.  
-//Circle only: RECEIVE_CIRCLE_DIRECTION_AND_DURATION
 
 
 

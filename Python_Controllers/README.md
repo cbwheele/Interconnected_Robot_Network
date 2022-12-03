@@ -43,6 +43,19 @@ This folder contains two scripts. The first is `robot_controller.py` and it is t
 - 40 ticks is one circle rotation, so enter "040" for a full circle rotation
 - Always enter this number as a three digit number with leading digits as necessary
 
+### Manual Control
+- If the robot is unable to get to the correct starting location in the specified number of tries, then the script and robot will transition over to manual control
+- This allows you to use the "w", "a", "s", "d", and space keys to move the robot around on the operating theatre live
+- You have to press the key you want (and can delete and re-type) but then you have to press the return or enter key to send the command
+- You then send the "p" command when the robot is actually at the correct *p*osition
+- Commands:
+    - "w": Move Forward
+    - "a": Spin Left
+    - "s": Move Backwards
+    - "d": Spin Left
+    - " " (space): Stop moving
+    - "p": In position and move on to taking shape telemetry
+
 
 
 

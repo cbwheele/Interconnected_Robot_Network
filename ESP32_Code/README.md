@@ -36,13 +36,20 @@ This folder contains three sub-folders, which contain code for:
 
 ## IRN_Robot_ESP32 Code
 
-### Modify IP Address
 
+### Modify IP Address
 
 ### Modify code to make it be fully sequence control or circling only
 
+### Modify NUM_OF_TIMES_TO_AUTO_LOC
+
+### Modify WiFi Credentials
+
+
 
 ### Flashing the code and using the tags
+
+
 
 
 ## Tag Code
