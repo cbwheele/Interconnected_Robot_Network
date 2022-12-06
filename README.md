@@ -23,4 +23,6 @@ High-level instructions for how to download/use the code (refer to individual fo
 - Control using python script
 - Turn off all robots and put everything away
 
+Please refer to the User Guide PDF in this repo for more information about how to use this project.
+
 We hope you enjoy using the Interconnected Robot Network!
