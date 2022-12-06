@@ -1,4 +1,4 @@
-# JHardware
+# Hardware
 This file contains our custom PCB schematics and gerber files.
 Other hardware used for the projects are:
 - TI RSLK MAX: https://www.ti.com/product/TIRSLK-EVM/part-details/TIRSLK-EVM?HQS=corp-uni-null-rslkmax-pr-store-launch-wwe
