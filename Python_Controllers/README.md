@@ -67,6 +67,10 @@ This folder contains two scripts. The first is `robot_controller.py` and it is t
 
 2. Now, open up your favorite terminal command and run your Python executor on the script with sudo (root system) permissions. On Mac, this looks like `sudo python3 uwb_position_display.py`, but on Windows it can vary by Python version and terminal used.
 
+3. Go to this link: https://github.com/Makerfabs/Makerfabs-ESP32-UWB, and find the code to download onto an ESP32
+
+4. Flash that code onto one of the ESP32 UWB modules and plug it in to power so it is on.
+
 
 ### Using the script
 - If the tag is able to get readings from the anchors and the IP address on the tag is correct for your laptop, you should see a 2-D map of where the tag is in relation to the anchors
